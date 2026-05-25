@@ -1,0 +1,7 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "了解 backend spec 结构"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "主进程代码规范，IPC 命名约定"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "IPC error 传播规范"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "React 组件代码风格"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript 类型安全规范"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Mantine 组件使用指南"}
