@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell } from "electron";
+import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, session } from "electron";
 import path from "node:path";
 import { DatabaseService } from "./database";
 import { Analyze as AiAnalyze, type IAiConfig } from "./ai-service";
@@ -95,6 +95,23 @@ function BuildAiConfig(): IAiConfig {
         ApiEndpoint: databaseService.GetSetting("ai_api_endpoint") ?? "https://api.openai.com/v1/chat/completions",
         Model: databaseService.GetSetting("ai_model") ?? "gpt-4o-mini",
     };
+}
+
+// 启动时初始化代理配置：读取 proxy_enabled 设置，默认开启系统代理
+function InitProxy(): void {
+    if (!databaseService) {
+        console.error("[Main] databaseService is null, skipping proxy init");
+        return;
+    }
+
+    const proxyEnabled: boolean = databaseService.GetSetting("proxy_enabled") !== "false";
+    const proxyConfig: { mode: "system" | "direct" } = proxyEnabled
+        ? { mode: "system" as const }
+        : { mode: "direct" as const };
+
+    session.defaultSession.setProxy(proxyConfig);
+    session.fromPartition("electron-updater").setProxy(proxyConfig);
+    console.log(`[Main] Proxy mode: ${proxyConfig.mode}`);
 }
 
 // 创建窗口时不显示，等 ready-to-show 再显示，避免白屏闪烁
@@ -297,7 +314,23 @@ function RegisterIpcHandlers(): void {
     });
 
     ipcMain.handle("updates:get-settings", () => {
-        return updateService!.GetSettings();
+        const base = updateService!.GetSettings();
+        const proxyEnabled: boolean = databaseService!.GetSetting("proxy_enabled") !== "false";
+        return { ...base, ProxyEnabled: proxyEnabled };
+    });
+
+    ipcMain.handle("updates:set-proxy", (_event, enabled: unknown) => {
+        if (typeof enabled !== "boolean") {
+            throw new Error("参数格式错误。");
+        }
+
+        databaseService!.SetSetting("proxy_enabled", enabled ? "true" : "false");
+        const proxyConfig: { mode: "system" | "direct" } = enabled
+            ? { mode: "system" as const }
+            : { mode: "direct" as const };
+
+        session.defaultSession.setProxy(proxyConfig);
+        session.fromPartition("electron-updater").setProxy(proxyConfig);
     });
 
     ipcMain.handle("updates:set-source", (_event, source: string) => {
@@ -343,6 +376,7 @@ if (!gotTheLock) {
         console.log("[Main] App ready");
         databaseService = await DatabaseService.create();
         console.log("[Main] DatabaseService initialized");
+        InitProxy();
         updateService = new UpdateService(() => mainWindow);
         RegisterIpcHandlers();
         CreateWindow();

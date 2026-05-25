@@ -45,6 +45,8 @@ declare global {
             InstallUpdate: () => Promise<void>;
             OnRecordsUpdated: (callback: () => void) => () => void;
             OnUpdateStateChanged: (callback: (state: IUpdateState) => void) => () => void;
+            SetUpdateProxy: (enabled: boolean) => Promise<void>;
+            GetUpdateProxy: () => Promise<boolean>;
             OpenExternal: (url: string) => Promise<void>;
         };
     }

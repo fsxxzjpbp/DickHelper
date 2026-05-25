@@ -12,6 +12,7 @@ import {
     Select,
     SegmentedControl,
     Stack,
+    Switch,
     Text,
     TextInput,
     Title,
@@ -81,6 +82,19 @@ export const Settings = () => {
     const updateProgress: number = UpdateState?.DownloadProgress ?? 0;
     const isChecking: boolean = UpdateState?.IsChecking === true;
     const isDownloading: boolean = UpdateState?.IsDownloading === true;
+
+    const [proxyEnabled, setProxyEnabled] = useState<boolean>(true);
+
+    useEffect(() => {
+        UpdateService.GetProxy()
+            .then(setProxyEnabled)
+            .catch(() => setProxyEnabled(true));
+    }, []);
+
+    const HandleProxyToggle = (enabled: boolean): void => {
+        setProxyEnabled(enabled);
+        void UpdateService.SetProxy(enabled);
+    };
 
     const HandleExport = async (): Promise<void> => {
         const allRecords = await DatabaseService.GetRecords();
@@ -229,6 +243,16 @@ export const Settings = () => {
                                 { label: "ghfast 镜像", value: "mirror" },
                                 { label: "GitHub 直连", value: "github" },
                             ]}
+                        />
+                    </Group>
+
+                    <Divider />
+
+                    <Group justify="space-between" align="center">
+                        <Text size="sm" c="dimmed">使用系统代理</Text>
+                        <Switch
+                            checked={proxyEnabled}
+                            onChange={(event) => HandleProxyToggle(event.currentTarget.checked)}
                         />
                     </Group>
 

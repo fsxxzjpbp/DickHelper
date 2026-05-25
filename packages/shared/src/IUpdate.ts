@@ -13,6 +13,7 @@ export type UpdateStatus =
 export interface IUpdateSettings {
     readonly Source: UpdateSource;
     readonly FeedUrl: string;
+    readonly ProxyEnabled: boolean;
 }
 
 export interface IUpdateState {

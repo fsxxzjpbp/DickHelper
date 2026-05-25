@@ -41,6 +41,11 @@ const electronAPI = {
             ipcRenderer.removeListener("updates:state-changed", listener);
         };
     },
+    SetUpdateProxy: (enabled: boolean): Promise<void> => ipcRenderer.invoke("updates:set-proxy", enabled),
+    GetUpdateProxy: (): Promise<boolean> =>
+        ipcRenderer.invoke("updates:get-settings").then(
+            (settings: IUpdateSettings) => settings.ProxyEnabled
+        ),
     OpenExternal: (url: string): Promise<void> => ipcRenderer.invoke("shell:open-external", url),
 };
 

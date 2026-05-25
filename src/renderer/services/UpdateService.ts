@@ -38,6 +38,14 @@ export class UpdateService {
         return GetApi().InstallUpdate();
     }
 
+    public static SetProxy(enabled: boolean): Promise<void> {
+        return GetApi().SetUpdateProxy(enabled);
+    }
+
+    public static GetProxy(): Promise<boolean> {
+        return GetApi().GetUpdateProxy();
+    }
+
     public static OnUpdateStateChanged(callback: (state: IUpdateState) => void): () => void {
         return GetApi().OnUpdateStateChanged(callback);
     }

@@ -52,6 +52,7 @@ export class UpdateService {
         return {
             Source: this._source,
             FeedUrl: this.GetFeedUrl(this._source),
+            ProxyEnabled: true,
         };
     }
 
