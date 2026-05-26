@@ -21,6 +21,7 @@ This directory contains guidelines for the new Electron-based DickHelper rewrite
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Filled |
 | [Type Safety](./type-safety.md) | Type patterns, validation | Filled |
 | [Data Migration](./data-migration.md) | Old version JSON import contract | Filled |
+| [Mobile Implementation](./mobile-implementation.md) | Mobile app Phase 1 implementation contract routing | Filled |
 | [App Shell](./app-shell.md) | Layout, navbar, view switching (no Router) | Filled |
 | [Code Style](./code-style.md) | C# / .NET style TypeScript conventions | Filled |
 
