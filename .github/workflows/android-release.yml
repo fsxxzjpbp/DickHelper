@@ -100,24 +100,31 @@ jobs:
           const fs = require('fs');
           let content = fs.readFileSync('build.gradle', 'utf8');
 
-          // 1. Add release signingConfig block after the debug block
-          const releaseBlock = [
-            '',
+          // Insert release signingConfig before the closing '}' of signingConfigs block.
+          // Uses brace counting instead of fragile regex.
+          const releaseBlock = '\n' + [
             '        release {',
             '            storeFile rootProject.file(\"../release.keystore\")',
             '            storePassword System.getenv(\"KEYSTORE_PASSWORD\") ?: \"android\"',
             '            keyAlias System.getenv(\"KEY_ALIAS\") ?: \"androiddebugkey\"',
             '            keyPassword System.getenv(\"KEY_PASSWORD\") ?: \"android\"',
             '        }',
-          ].join('\n');
+          ].join('\n') + '\n    ';
 
-          content = content.replace(
-            /(keyPassword\s+['\"]android['\"]\s*)/,
-            (match) => match + releaseBlock
-          );
+          const sigIdx = content.indexOf('signingConfigs {');
+          let depth = 0;
+          let insertAt = -1;
+          for (let i = content.indexOf('{', sigIdx); i < content.length; i++) {
+            if (content[i] === '{') depth++;
+            if (content[i] === '}') {
+              depth--;
+              if (depth === 0) { insertAt = i; break; }
+            }
+          }
+          if (insertAt === -1) throw new Error('Could not find signingConfigs closing brace');
+          content = content.slice(0, insertAt) + releaseBlock + content.slice(insertAt);
 
-          // 2. Replace only the SECOND occurrence of signingConfig signingConfigs.debug
-          //    (first is in debug buildType, second is in release buildType)
+          // Replace only the SECOND signingConfigs.debug -> signingConfigs.release
           let count = 0;
           content = content.replace(
             /signingConfig signingConfigs\.debug/g,
