@@ -94,6 +94,7 @@ const NAV_ITEMS: { view: View; label: string; icon: typeof IconClock }[] = [
 export const App = () => {
     const [activeView, setActiveView] = useState<View>("record");
     const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<string | null>(null);
+    const [dismissedDownloadedVersion, setDismissedDownloadedVersion] = useState<string | null>(null);
     const { UpdateState } = useUpdateState();
 
     const updateVersion: string | null = UpdateState?.AvailableVersion ?? null;
@@ -104,10 +105,25 @@ export const App = () => {
 
     const HandleDownloadUpdate = (): void => {
         void UpdateService.DownloadUpdate();
+        setActiveView("settings");
     };
+
+    const shouldShowDownloadedModal: boolean =
+        UpdateState?.IsUpdateDownloaded === true &&
+        updateVersion !== null &&
+        dismissedDownloadedVersion !== updateVersion;
 
     const HandleDismissUpdate = (): void => {
         setDismissedUpdateVersion(updateVersion);
+    };
+
+    const HandleDismissDownloaded = (): void => {
+        setDismissedDownloadedVersion(updateVersion);
+    };
+
+    const HandleGoToSettings = (): void => {
+        setDismissedDownloadedVersion(updateVersion);
+        setActiveView("settings");
     };
 
     return (
@@ -135,6 +151,30 @@ export const App = () => {
                             onClick={HandleDownloadUpdate}
                         >
                             下载
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            <Modal
+                opened={shouldShowDownloadedModal}
+                onClose={HandleDismissDownloaded}
+                title="下载完成"
+                centered
+            >
+                <Stack gap="md">
+                    <Text size="sm">
+                        v{updateVersion} 已下载完成，可前往设置页面安装更新。
+                    </Text>
+                    <Group justify="flex-end">
+                        <Button variant="subtle" onClick={HandleDismissDownloaded}>
+                            稍后
+                        </Button>
+                        <Button
+                            leftSection={<IconSettings size={16} />}
+                            onClick={HandleGoToSettings}
+                        >
+                            前往设置
                         </Button>
                     </Group>
                 </Stack>
