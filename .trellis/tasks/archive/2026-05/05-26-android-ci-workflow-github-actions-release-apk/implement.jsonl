@@ -1,0 +1,2 @@
+{"file": "research/github-actions-android-setup.md", "reason": "Android SDK setup on ubuntu-latest, signing injection via env vars, Expo prebuild in CI patterns"}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "Mobile app architecture spec — Android build config, app.json conventions, monorepo structure"}

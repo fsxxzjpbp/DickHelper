@@ -1,0 +1,2 @@
+{"file": "research/github-actions-android-setup.md", "reason": "Verify CI setup follows researched best practices for Android SDK, signing, and Expo prebuild"}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "Verify APK build output matches mobile implementation spec requirements"}
