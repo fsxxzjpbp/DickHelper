@@ -347,3 +347,37 @@ Reviewed PR #35, posted review, pushed a simplified prediction-page commit to th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 移动端 Android MVP 打包验证与收尾
+
+**Date**: 2026-05-26
+**Task**: 移动端 Android MVP 打包验证与收尾
+**Branch**: `main`
+
+### Summary
+
+完成移动端 Android MVP 的 APK 打包测试：修复 local.properties SDK 路径、精简 CPU 架构为 arm64-v8a+x86_64、修复 debug build 不内嵌 JS bundle 问题、生成应用图标。release APK 在真机 vivo V2352A 上验证通过。同步提交 update-ux-notification 的下载完成弹窗通知。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `69a6e49` | (see git log) |
+| `487c938` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
