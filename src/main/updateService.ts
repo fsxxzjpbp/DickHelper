@@ -16,7 +16,7 @@ interface IUpdateConfig {
 
 const DEFAULT_SOURCE: UpdateSource = "mirror";
 const UPDATE_CONFIG_FILE_NAME = "update-settings.json";
-const DIRECT_UPDATE_FEED_URL = "https://github.com/zzzdajb/DickHelper/releases/latest/download/";
+const DIRECT_UPDATE_FEED_URL = "https://github.com/zzzdajb/DickHelper/releases/download/desktop-latest/";
 const MIRROR_UPDATE_FEED_URL = `https://ghfast.top/${DIRECT_UPDATE_FEED_URL}`;
 
 export class UpdateService {

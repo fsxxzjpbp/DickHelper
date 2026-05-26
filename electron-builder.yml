@@ -9,7 +9,7 @@ files:
   - resources/**/*
 publish:
   provider: generic
-  url: https://github.com/zzzdajb/DickHelper/releases/latest/download/
+  url: https://github.com/zzzdajb/DickHelper/releases/download/desktop-latest/
 win:
   target: nsis
   artifactName: "${productName}-${version}-windows-${arch}.${ext}"

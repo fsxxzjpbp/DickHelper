@@ -2,11 +2,11 @@ name: Release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["desktop-v*.*.*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Version tag to build and publish, for example v2.0.0"
+        description: "Version tag to build and publish, for example desktop-v2.0.0"
         required: true
         type: string
 
@@ -42,8 +42,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
-            echo "RELEASE_TAG must look like v2.0.0, got: $RELEASE_TAG"
+          if [[ ! "$RELEASE_TAG" =~ ^desktop-v[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+            echo "RELEASE_TAG must look like desktop-v2.0.0, got: $RELEASE_TAG"
             exit 1
           fi
 
@@ -62,10 +62,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RELEASE_VERSION="${RELEASE_TAG#v}"
+          RELEASE_VERSION="${RELEASE_TAG#desktop-v}"
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           if [[ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]]; then
-            echo "::error::package.json version ($PACKAGE_VERSION) must match release tag without v ($RELEASE_VERSION)."
+            echo "::error::package.json version ($PACKAGE_VERSION) must match release tag without desktop-v ($RELEASE_VERSION)."
             exit 1
           fi
 
@@ -127,6 +127,11 @@ jobs:
       RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download release assets
         uses: actions/download-artifact@v4
         with:
@@ -172,3 +177,10 @@ jobs:
 
           echo "Verifying release assets:"
           gh release view "$RELEASE_TAG" --repo "$GH_REPO" --json assets --jq '.assets[] | "  \(.name) (\(.size) bytes)"' || echo "(could not verify)"
+
+      - name: Update desktop-latest tag
+        run: |
+          set -euo pipefail
+          git tag -f desktop-latest "$RELEASE_TAG^{}"
+          git push origin -f desktop-latest
+          echo "desktop-latest tag updated to $RELEASE_TAG"
