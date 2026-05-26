@@ -208,7 +208,7 @@ jobs:
 
           VERSION="${RELEASE_TAG#mobile-v}"
 
-          # Delete existing release if any, then create fresh
+          # TODO(prod): 正式发布时移除 --prerelease，避免 desktop auto-update 被 mobile release 污染 latest 指针
           gh release delete "$RELEASE_TAG" --yes --repo "$GH_REPO" 2>/dev/null || true
           gh release create "$RELEASE_TAG" "${assets[@]}" \
             --title "DickHelper Mobile $VERSION" \
