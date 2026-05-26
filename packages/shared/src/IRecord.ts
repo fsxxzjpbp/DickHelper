@@ -11,7 +11,7 @@ export interface IRecordRaw {
     readonly StartTime: string;
     readonly EndTime: string;
     readonly Duration: number;
-    readonly Notes: string | null;
+    readonly Notes?: string | null;
 }
 
 export interface IStats {

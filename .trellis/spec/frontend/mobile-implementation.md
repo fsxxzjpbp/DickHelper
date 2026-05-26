@@ -52,6 +52,14 @@ interface IImportResult {
 }
 ```
 
+Record identity boundary:
+
+```typescript
+interface IRecordRaw {
+    Id: string; // runtime validation must reject empty or whitespace-only values
+}
+```
+
 ### 3. Contracts
 
 - Mobile app code belongs under `apps/mobile/**`.
@@ -69,6 +77,7 @@ interface IImportResult {
 | Mobile code is proposed under root `src/**` | Reject and move it under `apps/mobile/**` |
 | Import/export logic is implemented outside `packages/core` | Reject or refactor into `packages/core` |
 | New JSON format diverges from desktop v1 | Reject unless the implementation contract is updated first |
+| Canonical `Id` or legacy `id` is empty or whitespace-only | Reject the record and increment `Rejected` |
 | Agent suggests SecureStore, LAN sync, APK self-update, or iOS build support in Phase 1 | Reject as out of scope |
 
 ### 5. Good/Base/Bad Cases
@@ -86,6 +95,7 @@ Phase 1 mobile implementation must add and run `packages/core` unit tests for:
 - Legacy top-level array import.
 - Legacy `startTime` to new `EndTime` mapping.
 - Rejected malformed records.
+- Rejected empty or whitespace-only `Id` values for canonical and legacy imports.
 - Duplicate `Id` skip behavior.
 - Schema constants for `Records` and `Settings`.
 
@@ -96,6 +106,7 @@ Phase 1 mobile implementation must add and run `packages/core` unit tests for:
 ```text
 src/mobile/App.tsx
 src/renderer/mobileImportJson.ts
+NormalizeId(value) accepts ""
 ```
 
 #### Correct
@@ -103,6 +114,7 @@ src/renderer/mobileImportJson.ts
 ```text
 apps/mobile/app/(tabs)/index.tsx
 packages/core/src/recordImportExport.ts
+NormalizeId(value) rejects "" and "   "
 ```
 
 ---

@@ -9,3 +9,5 @@ export type {
     IWeekdayCount,
     IMonthlyCount,
 } from "./IRecord";
+export type { IMobileExportV1 } from "./IMobileExport";
+export type { ILegacyRecordImportRow, IRecordImportParseResult, IRecordIdStatistics } from "./IRecordImport";

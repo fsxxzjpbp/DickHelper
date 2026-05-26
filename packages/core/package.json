@@ -1,0 +1,15 @@
+{
+  "name": "@dickhelper/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@dickhelper/shared": "file:../shared"
+  },
+  "scripts": {
+    "test": "tsx test/recordImportExport.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

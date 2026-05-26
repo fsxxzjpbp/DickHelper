@@ -2,7 +2,8 @@
   "name": "dickhelper",
   "private": true,
   "workspaces": [
-    "packages/shared"
+    "apps/*",
+    "packages/*"
   ],
   "version": "2.0.5",
   "type": "module",
@@ -10,7 +11,16 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "preview": "electron-vite preview"
+    "preview": "electron-vite preview",
+    "typecheck:desktop": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json",
+    "typecheck:core": "tsc -p packages/core/tsconfig.json",
+    "typecheck:mobile": "tsc -p apps/mobile/tsconfig.json",
+    "typecheck": "npm run typecheck:desktop && npm run typecheck:core && npm run typecheck:mobile",
+    "lint": "eslint src/main src/preload packages apps/mobile --ext .ts,.tsx",
+    "test:core": "npm --workspace @dickhelper/core run test",
+    "mobile:start": "npm --workspace @dickhelper/mobile run start",
+    "mobile:export": "npm --workspace @dickhelper/mobile run export:android",
+    "check": "npm run typecheck && npm run lint && npm run test:core && npm run mobile:export"
   },
   "dependencies": {
     "electron-updater": "^6.8.3",
@@ -19,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@types/node": "^24.3.1",
     "@mantine/core": "^7.17.0",
     "@mantine/hooks": "^7.17.0",
     "@tabler/icons-react": "^3.31.0",
@@ -33,9 +44,11 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-safe-area-context": "~5.7.0",
     "sharp": "^0.34.5",
+    "tsx": "^4.19.4",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
     "vite": "^6.1.0"

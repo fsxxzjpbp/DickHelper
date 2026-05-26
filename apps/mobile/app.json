@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "DickHelper",
+    "slug": "dickhelper-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "dickhelper-mobile",
+    "platforms": [
+      "android"
+    ],
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f8fafc",
+    "primaryColor": "#0f766e",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.dickhelper.mobile",
+      "versionCode": 1,
+      "predictiveBackGestureEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-sharing",
+      "expo-status-bar"
+    ]
+  }
+}
