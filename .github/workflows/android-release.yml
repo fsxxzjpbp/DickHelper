@@ -209,6 +209,7 @@ jobs:
             gh release create "$RELEASE_TAG" "${assets[@]}" \
               --title "DickHelper Mobile $VERSION" \
               --notes "Android APK for DickHelper Mobile v$VERSION." \
+              --prerelease \
               --repo "$GH_REPO"
           fi
 
