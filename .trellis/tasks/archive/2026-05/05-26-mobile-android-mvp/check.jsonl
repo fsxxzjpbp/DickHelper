@@ -1,0 +1,12 @@
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared Trellis thinking guide index for final review."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review data flow across packages, SQLite, and mobile UI."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Review that shared core logic is reused rather than duplicated."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend spec index for applicable quality checks."}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "Primary mobile implementation quality gate."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Type-safety review for shared/core/mobile code."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality review and forbidden pattern checks."}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Style/naming review."}
+{"file": ".trellis/spec/frontend/data-migration.md", "reason": "JSON migration compatibility review."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "SQLite schema/date storage review."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Import validation/error behavior review."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Persistence quality review."}

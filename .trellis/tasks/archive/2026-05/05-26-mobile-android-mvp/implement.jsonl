@@ -1,0 +1,12 @@
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared Trellis thinking guide index for cross-layer and reuse checks."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Mobile MVP spans packages, SQLite persistence, import/export, and UI."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Core contract must prevent duplicated JSON/import validation logic."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend spec index for applicable implementation guidelines."}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "Required mobile implementation routing spec and contract pointer."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Strict TypeScript and validation guidance for shared/core/mobile boundaries."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality bar and forbidden patterns."}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Project TypeScript naming and style conventions."}
+{"file": ".trellis/spec/frontend/data-migration.md", "reason": "Existing desktop JSON import compatibility contract."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "SQLite table/date storage expectations relevant to mobile schema."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Import validation and error reporting conventions."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend/persistence quality bar for database-facing code."}
