@@ -381,3 +381,41 @@ Reviewed PR #35, posted review, pushed a simplified prediction-page commit to th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: Android CI workflow 开发与调试
+
+**Date**: 2026-05-26
+**Task**: Android CI workflow 开发与调试
+**Branch**: `main`
+
+### Summary
+
+新建 android-release.yml (mobile-v* 触发，expo prebuild + Gradle assembleRelease + GitHub Release)，改造 release.yml 触发前缀为 desktop-v* 并维护 desktop-latest tag，更新 updateService.ts/electron-builder.yml feed URL。CI 经 3 轮调试修复：签名注入脚本(brace counting)、Node.js 18→22(toReversed)、架构精简(arm64-v8a only)、Release 先删后建。GitHub Actions 宕机待验证最终全流程。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `61484d7` | (see git log) |
+| `8916f16` | (see git log) |
+| `42b3062` | (see git log) |
+| `32f6ef6` | (see git log) |
+| `cc2fb93` | (see git log) |
+| `968b540` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

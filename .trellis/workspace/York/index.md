@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
+- **Total Sessions**: 12
 - **Last Active**: 2026-05-26
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~383 | Active |
+| `journal-1.md` | ~421 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-05-26 | Android CI workflow 开发与调试 | `61484d7`, `8916f16`, `42b3062`, `32f6ef6`, `cc2fb93`, `968b540` | `main` |
 | 11 | 2026-05-26 | 移动端 Android MVP 打包验证与收尾 | `69a6e49`, `487c938` | `main` |
 | 10 | 2026-05-25 | PR 35 review and timeout troubleshooting rule | `f5fd463` | `main` |
 | 9 | 2026-05-25 | App icons, monorepo setup, menu bar & star button | `cae39f3`, `25083e2`, `0c3a7db` | `main` |
