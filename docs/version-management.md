@@ -1,58 +1,108 @@
 # 版本管理说明
 
-## 双版本体系
+## 三个不同概念
 
-项目有两个独立的版本号：
+项目里要区分三件事：
 
-| 平台 | 版本来源 | 触发方式 | Tag 格式 |
-|------|----------|----------|----------|
-| Desktop | `package.json`（根目录） | 手动修改 → 打 tag → CI 构建 | `desktop-vX.Y.Z` |
-| Mobile | git tag（CI 自动覆盖） | 打 tag → CI 从 tag 解析版本 → 覆盖 `app.json` → 构建 | `mobile-vX.Y.Z` |
+| 概念 | 示例 | 作用 | 是否可能成为 GitHub Releases UI 的 Latest |
+|------|------|------|------|
+| 版本化 release | `desktop-vX.Y.Z`、`mobile-vX.Y.Z` | 对外可下载、可追溯的正式发布物 | 只有 desktop release 可以；mobile release 必须 `latest=false` |
+| 机器更新通道 | `desktop-latest`、`mobile-latest` | 给自动更新程序读取的稳定入口 | 不是 UI Latest；desktop 是 tag/feed，mobile 是 tag + release assets |
+| GitHub repo Latest UI | GitHub Releases 页面里的 Latest 标记 | 给人看的发布标签 | 只允许 desktop 线路出现；mobile 绝不能占用 |
 
-## Mobile 版本机制（重要）
+结论很简单：
 
-**CI 是唯一的发布版本来源。** `android-release.yml` 会：
+- Desktop 的自动更新永远走 `desktop-latest`。
+- Mobile 的自动更新永远走 `mobile-latest/mobile-update.json`。
+- 程序逻辑都不应该依赖 `releases/latest`。
 
-1. 从 git tag 提取版本号（如 `mobile-v0.2.0` → `0.2.0`）
-2. 自动计算 `versionCode = MAJOR * 10000 + MINOR * 100 + PATCH`
-3. 构建前覆盖 `apps/mobile/app.json` 中的 `version` 和 `versionCode`
-4. 用覆盖后的 `app.json` 进行 Expo 构建
+## Desktop 版本与更新
 
-**因此本地 `app.json` 的版本号仅影响本地开发构建，不影响发版。**
+Desktop 版本仍然由根目录 `package.json` 管理：
 
-## 需要手动同步的文件
+1. 修改根目录 `package.json` 的 `version` 字段。
+2. 打 tag `desktop-vX.Y.Z`。
+3. `release.yml` 构建并发布版本化 release。
+4. `release.yml` force-push `desktop-latest` tag，供桌面 updater 读取。
 
-发版时本地文件不需要改版本（CI 会覆盖），但如果想保持本地一致，需要改以下 3 处：
+桌面更新配置使用的是：
+
+```text
+https://github.com/zzzdajb/DickHelper/releases/download/desktop-latest/
+```
+
+`electron-updater` 会在这个前缀后面继续读取对应平台的 metadata 文件。
+
+## Mobile 版本与更新
+
+Mobile 版本由 CI 从 `mobile-vX.Y.Z` tag 解析：
+
+1. 从 tag 提取版本号，例如 `mobile-v0.2.0` -> `0.2.0`。
+2. 自动计算 `versionCode = MAJOR * 10000 + MINOR * 100 + PATCH`。
+3. 构建前覆盖 `apps/mobile/app.json` 中的 `version` 和 `versionCode`。
+4. 生成两个 mobile 产物：
+   - 版本化 release：`mobile-vX.Y.Z`
+   - 稳定机器通道：`mobile-latest`
+
+Mobile 不通过“列出所有 mobile releases”发现更新。它只读固定 manifest：
+
+```text
+https://github.com/zzzdajb/DickHelper/releases/download/mobile-latest/mobile-update.json
+```
+
+manifest 里会给出最新 APK 的下载地址、版本号和 SHA-256。
+
+## Mobile release 规则
+
+`android-release.yml` 必须把两个 mobile release 都显式标记为 `latest=false`：
+
+```bash
+gh release create mobile-v0.2.0 ... --latest=false
+gh release create mobile-latest ... --latest=false
+```
+
+如果 release 已经存在，更新时也要保持 `latest=false`：
+
+```bash
+gh release edit mobile-v0.2.0 --latest=false
+gh release edit mobile-latest --latest=false
+```
+
+这表示：
+
+- 它们都是正式 release，不是 prerelease。
+- 它们都不会抢占 GitHub repo Latest UI。
+- Mobile updater 仍然只消费 `mobile-latest/mobile-update.json`。
+
+`mobile-latest` 产物必须至少包含：
+
+- `mobile-update.json`
+- 最新 APK 资产
+- APK `sha256`，写在 manifest 里或单独作为校验文件
+
+## 本地版本字段
+
+如果想让本地开发环境和 CI 看起来一致，需要同步这几个地方：
 
 | 文件 | 字段 | 说明 |
 |------|------|------|
-| `apps/mobile/app.json` | `expo.version` | Expo 配置，CI 构建时会被覆盖 |
-| `apps/mobile/package.json` | `version` | npm 包版本，CI **不会**覆盖 |
-| `apps/mobile/app/settings/index.tsx` | fallback 值 | 兜底版本，实际读取 `Constants.expoConfig?.version` |
+| `apps/mobile/app.json` | `expo.version` | 仅影响本地开发构建；CI 会覆盖 |
+| `apps/mobile/package.json` | `version` | npm 包版本，CI 不覆盖 |
+| `apps/mobile/src/services/MobileUpdateService.ts` | fallback 值 | 当前版本优先读 `Application.nativeApplicationVersion` / `nativeBuildVersion`，本地开发时回退到 `Constants.expoConfig` |
 
-## Desktop 版本机制
-
-Desktop 版本是手动管理的：
-
-1. 修改根目录 `package.json` 的 `version` 字段
-2. 打 tag `desktop-vX.Y.Z`（版本号必须匹配，否则 CI 报错）
-3. CI 自动构建并发布
-
-## 发版流程
+## 发版示例
 
 ### Mobile
+
 ```bash
-# 直接打 tag 即可，不需要改任何文件
 git tag mobile-v0.2.0
 git push origin mobile-v0.2.0
 ```
 
 ### Desktop
+
 ```bash
-# 1. 修改根目录 package.json 的 version
-# 2. 提交
 git commit -am "调整版本号为X.Y.Z"
-# 3. 打 tag
 git tag desktop-vX.Y.Z
 git push origin desktop-vX.Y.Z
 ```

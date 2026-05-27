@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { Button, List, ProgressBar, SegmentedButtons, Snackbar, Surface, Text } from "react-native-paper";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
-import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { List, Snackbar, Surface, Text } from "react-native-paper";
+import type { IMobileUpdateState, MobileUpdateStatus } from "../../src/types/MobileUpdate";
 import { useMobileDatabaseService } from "../../src/hooks/useMobileDatabaseService";
+import { useMobileUpdateState } from "../../src/hooks/useMobileUpdateState";
 import { useRecords } from "../../src/hooks/useRecords";
 import { FormatDateTime } from "../../src/utils/formatters";
 
@@ -14,10 +15,16 @@ export default function SettingsScreen() {
     const router = useRouter();
     const database = useMobileDatabaseService();
     const { records, refresh } = useRecords();
+    const { updateState, setUpdateSource, checkForUpdates, downloadUpdate, installUpdate, openInstallPermissionSettings } =
+        useMobileUpdateState();
     const [busy, setBusy] = useState<boolean>(false);
     const [message, setMessage] = useState<string | null>(null);
 
-    const appVersion = Constants.expoConfig?.version ?? "0.0.1";
+    const isUpdateActionBusy = updateState.IsChecking || updateState.IsDownloading || updateState.IsInstalling;
+    const hasUpdateDetails = updateState.AvailableVersion !== null;
+    const sourceLabel = updateState.Source === "github" ? "GitHub" : "镜像";
+    const downloadButtonLabel = updateState.Status === "error" && hasUpdateDetails ? "重新下载 APK" : "下载 APK";
+    const statusText = GetUpdateStatusText(updateState.Status);
 
     const HandleImport = async (): Promise<void> => {
         setBusy(true);
@@ -40,10 +47,10 @@ export default function SettingsScreen() {
 
             const jsonText = await FileSystem.readAsStringAsync(asset.uri);
             const importResult = await database.ImportFromJson(jsonText);
+            await refresh();
             setMessage(
                 `导入完成：成功 ${importResult.Imported} 条，跳过 ${importResult.Skipped} 条，拒绝 ${importResult.Rejected} 条`
             );
-            await refresh();
         } catch (caught: unknown) {
             const errorMessage = caught instanceof Error ? caught.message : String(caught);
             setMessage(`导入失败：${errorMessage}`);
@@ -64,6 +71,7 @@ export default function SettingsScreen() {
 
             const fileUri = `${cacheDirectory}dickhelper-export.json`;
             await FileSystem.writeAsStringAsync(fileUri, jsonText);
+
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(fileUri);
                 setMessage(`已导出 ${records.length} 条记录`);
@@ -78,6 +86,57 @@ export default function SettingsScreen() {
         }
     };
 
+    const HandleUpdateSourceChange = async (value: string): Promise<void> => {
+        const nextSource = value === "github" ? "github" : "mirror";
+        try {
+            const nextState = await setUpdateSource(nextSource);
+            setMessage(`更新源已切换到 ${nextState.Source === "github" ? "GitHub" : "镜像"}`);
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setMessage(`切换更新源失败：${errorMessage}`);
+        }
+    };
+
+    const HandleCheckUpdates = async (): Promise<void> => {
+        try {
+            const nextState = await checkForUpdates();
+            setMessage(BuildUpdateResultMessage(nextState));
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setMessage(`检查更新失败：${errorMessage}`);
+        }
+    };
+
+    const HandleDownloadUpdate = async (): Promise<void> => {
+        try {
+            const nextState = await downloadUpdate();
+            setMessage(BuildUpdateResultMessage(nextState));
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setMessage(`下载更新失败：${errorMessage}`);
+        }
+    };
+
+    const HandleInstallUpdate = async (): Promise<void> => {
+        try {
+            const nextState = await installUpdate();
+            setMessage(BuildUpdateResultMessage(nextState));
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setMessage(`安装更新失败：${errorMessage}`);
+        }
+    };
+
+    const HandleOpenInstallPermissions = async (): Promise<void> => {
+        try {
+            await openInstallPermissionSettings();
+            setMessage("已打开系统安装权限设置");
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setMessage(`打开安装权限设置失败：${errorMessage}`);
+        }
+    };
+
     return (
         <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.header}>
@@ -85,7 +144,7 @@ export default function SettingsScreen() {
                     设置
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                    导入、导出、版本信息和 AI 占位入口。
+                    导入、导出、更新和关于信息。
                 </Text>
             </View>
 
@@ -114,6 +173,167 @@ export default function SettingsScreen() {
             </Surface>
 
             <Surface style={styles.sectionSurface} elevation={1}>
+                <View style={styles.updateHeader}>
+                    <Text variant="titleMedium" style={styles.sectionTitle}>
+                        更新
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.sectionSubtitle}>
+                        APK-only 更新，启动后自动检查一次，支持 GitHub / 镜像源切换。
+                    </Text>
+                </View>
+
+                <View style={styles.factRow}>
+                    <Text variant="bodyMedium" style={styles.factLabel}>
+                        当前版本
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.factValue}>
+                        v{updateState.CurrentVersion} · Build {updateState.CurrentVersionCode}
+                    </Text>
+                </View>
+
+                <View style={styles.factRow}>
+                    <Text variant="bodyMedium" style={styles.factLabel}>
+                        更新状态
+                    </Text>
+                    <Text
+                        variant="bodyMedium"
+                        style={[
+                            styles.factValue,
+                            updateState.Status === "error" || updateState.Status === "permission-required"
+                                ? styles.errorText
+                                : null,
+                        ]}
+                    >
+                        {statusText}
+                    </Text>
+                </View>
+
+                <View style={styles.factRow}>
+                    <Text variant="bodyMedium" style={styles.factLabel}>
+                        更新源
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.factValue}>
+                        {sourceLabel}
+                    </Text>
+                </View>
+
+                <SegmentedButtons
+                    value={updateState.Source}
+                    onValueChange={(value) => {
+                        void HandleUpdateSourceChange(value);
+                    }}
+                    buttons={[
+                        {
+                            value: "github",
+                            label: "GitHub",
+                            disabled: busy || isUpdateActionBusy,
+                        },
+                        {
+                            value: "mirror",
+                            label: "镜像",
+                            disabled: busy || isUpdateActionBusy,
+                        },
+                    ]}
+                    style={styles.segmentedButtons}
+                />
+
+                {updateState.IsDownloading ? (
+                    <ProgressBar
+                        progress={updateState.DownloadProgress !== null ? updateState.DownloadProgress / 100 : 0}
+                        indeterminate={updateState.DownloadProgress === null}
+                        style={styles.progressBar}
+                    />
+                ) : null}
+
+                <View style={styles.actionRow}>
+                    <Button
+                        mode="contained-tonal"
+                        icon="refresh"
+                        onPress={() => {
+                            void HandleCheckUpdates();
+                        }}
+                        loading={updateState.IsChecking}
+                        disabled={busy || isUpdateActionBusy}
+                        style={styles.actionButton}
+                    >
+                        检查更新
+                    </Button>
+
+                    {hasUpdateDetails && !updateState.IsDownloaded ? (
+                        <Button
+                            mode="contained"
+                            icon="download"
+                            onPress={() => {
+                                void HandleDownloadUpdate();
+                            }}
+                            loading={updateState.IsDownloading}
+                            disabled={busy || isUpdateActionBusy}
+                            style={styles.actionButton}
+                        >
+                            {downloadButtonLabel}
+                        </Button>
+                    ) : null}
+
+                    {updateState.IsDownloaded || updateState.IsPermissionRequired ? (
+                        <Button
+                            mode="contained"
+                            icon="application-import"
+                            onPress={() => {
+                                void HandleInstallUpdate();
+                            }}
+                            loading={updateState.IsInstalling}
+                            disabled={busy || isUpdateActionBusy}
+                            style={styles.actionButton}
+                        >
+                            安装更新
+                        </Button>
+                    ) : null}
+                </View>
+
+                {updateState.IsDownloaded || updateState.IsPermissionRequired ? (
+                    <Button
+                        mode="text"
+                        icon="shield-key-outline"
+                        onPress={() => {
+                            void HandleOpenInstallPermissions();
+                        }}
+                        disabled={busy || isUpdateActionBusy}
+                        style={styles.permissionButton}
+                    >
+                        打开安装权限设置
+                    </Button>
+                ) : null}
+
+                {hasUpdateDetails ? (
+                    <Surface style={styles.updateDetailSurface} elevation={0}>
+                        <Text variant="labelLarge" style={styles.detailLabel}>
+                            最新版本
+                        </Text>
+                        <Text variant="bodyMedium" style={styles.detailValue}>
+                            v{updateState.AvailableVersion} · Build {updateState.AvailableVersionCode}
+                        </Text>
+                        <Text variant="bodyMedium" style={styles.detailValue}>
+                            发布时间：{updateState.PublishedAt !== null ? FormatDateTime(new Date(updateState.PublishedAt)) : "未知"}
+                        </Text>
+                        <Text variant="bodyMedium" style={styles.detailValue}>
+                            强制更新：{updateState.Force ? "是" : "否"}
+                        </Text>
+                        {updateState.Notes !== null && updateState.Notes.trim().length > 0 ? (
+                            <Text variant="bodyMedium" style={styles.notesText}>
+                                {updateState.Notes}
+                            </Text>
+                        ) : null}
+                    </Surface>
+                ) : null}
+
+                {updateState.ErrorMessage !== null ? (
+                    <Text variant="bodyMedium" style={styles.errorText}>
+                        {updateState.ErrorMessage}
+                    </Text>
+                ) : null}
+            </Surface>
+
+            <Surface style={styles.sectionSurface} elevation={1}>
                 <List.Section>
                     <List.Subheader>功能</List.Subheader>
                     <List.Item
@@ -134,7 +354,7 @@ export default function SettingsScreen() {
                     DickHelper Android MVP
                 </Text>
                 <Text variant="bodyMedium" style={styles.aboutText}>
-                    版本：{appVersion}
+                    版本：v{updateState.CurrentVersion} · Build {updateState.CurrentVersionCode}
                 </Text>
                 <Text variant="bodyMedium" style={styles.aboutText}>
                     平台：Android
@@ -144,11 +364,61 @@ export default function SettingsScreen() {
                 </Text>
             </Surface>
 
-            <Snackbar visible={message !== null} onDismiss={() => setMessage(null)} duration={3000}>
+            <Snackbar visible={message !== null} onDismiss={() => setMessage(null)} duration={3200}>
                 {message}
             </Snackbar>
         </ScrollView>
     );
+}
+
+function GetUpdateStatusText(status: MobileUpdateStatus): string {
+    switch (status) {
+        case "idle":
+            return "等待检查";
+        case "checking":
+            return "正在检查更新";
+        case "up-to-date":
+            return "已是最新版本";
+        case "available":
+            return "发现新版本";
+        case "downloading":
+            return "正在下载 APK";
+        case "downloaded":
+            return "APK 已下载完成";
+        case "installing":
+            return "正在打开系统安装器";
+        case "permission-required":
+            return "需要先允许安装未知应用";
+        case "error":
+            return "发生错误";
+        case "disabled":
+            return "当前平台不支持";
+    }
+}
+
+function BuildUpdateResultMessage(state: IMobileUpdateState): string {
+    switch (state.Status) {
+        case "up-to-date":
+            return "当前已是最新版本";
+        case "available":
+            return state.AvailableVersion !== null ? `发现新版本 v${state.AvailableVersion}` : "发现新版本";
+        case "downloading":
+            return "正在下载更新包";
+        case "downloaded":
+            return "更新包已下载完成，可直接安装";
+        case "installing":
+            return "系统安装器已打开";
+        case "permission-required":
+            return "需要先允许安装未知应用";
+        case "error":
+            return state.ErrorMessage ?? "更新操作失败";
+        case "disabled":
+            return "当前平台不支持 APK 更新";
+        case "checking":
+            return "正在检查更新";
+        case "idle":
+            return "更新状态已刷新";
+    }
 }
 
 const styles = StyleSheet.create({
@@ -170,7 +440,72 @@ const styles = StyleSheet.create({
     sectionSurface: {
         borderRadius: 12,
         backgroundColor: "#ffffff",
-        overflow: "hidden",
+        padding: 16,
+        gap: 16,
+    },
+    sectionTitle: {
+        color: "#0f172a",
+        fontWeight: "700",
+    },
+    sectionSubtitle: {
+        color: "#475569",
+        lineHeight: 20,
+    },
+    updateHeader: {
+        gap: 8,
+    },
+    factRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 12,
+    },
+    factLabel: {
+        color: "#64748b",
+        flexShrink: 0,
+    },
+    factValue: {
+        color: "#0f172a",
+        flex: 1,
+        textAlign: "right",
+    },
+    errorText: {
+        color: "#dc2626",
+    },
+    segmentedButtons: {
+        marginTop: 4,
+    },
+    progressBar: {
+        marginTop: 4,
+    },
+    actionRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+    actionButton: {
+        borderRadius: 12,
+    },
+    permissionButton: {
+        alignSelf: "flex-start",
+        marginLeft: -8,
+    },
+    updateDetailSurface: {
+        borderRadius: 10,
+        backgroundColor: "#f8fafc",
+        padding: 12,
+        gap: 6,
+    },
+    detailLabel: {
+        color: "#64748b",
+    },
+    detailValue: {
+        color: "#0f172a",
+    },
+    notesText: {
+        color: "#334155",
+        lineHeight: 22,
+        marginTop: 4,
     },
     aboutSurface: {
         borderRadius: 12,

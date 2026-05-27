@@ -2,7 +2,7 @@
 
 > Code-spec entry point for DickHelper mobile development.
 
-Mobile implementation work is governed by `docs/mobile-implementation-contract.md`. This spec file exists so Trellis-loaded frontend context points future agents to that contract before they write code.
+Mobile implementation work is governed by `docs/mobile-implementation-contract.md`. APK-only update work for Android is part of the approved mobile scope; this spec exists so Trellis-loaded frontend context points future agents to that contract and the mobile release workflow before they write code.
 
 ---
 
@@ -16,6 +16,8 @@ Read this spec whenever a task:
 - Adds or changes cross-platform record/data import logic.
 - Changes workspace layout for `apps/*` or `packages/*`.
 - Touches mobile SQLite schema, JSON import/export, or record validation.
+- Touches the Android APK update manifest, startup/manual update checks, or APK install handoff.
+- Modifies `.github/workflows/android-release.yml` or mobile release tag/asset naming.
 
 ### 2. Signatures
 
@@ -60,6 +62,20 @@ interface IRecordRaw {
 }
 ```
 
+Canonical mobile update manifest:
+
+```typescript
+interface IMobileUpdateManifest {
+    version: string;
+    versionCode: number;
+    publishedAt: string;
+    notes: string;
+    apkUrl: string;
+    apkSha256: string;
+    force?: boolean;
+}
+```
+
 ### 3. Contracts
 
 - Mobile app code belongs under `apps/mobile/**`.
@@ -68,6 +84,11 @@ interface IRecordRaw {
 - Cross-platform pure data logic belongs in `packages/core/**`.
 - Current desktop JSON and record semantics are the Phase 1 authority for mobile compatibility.
 - Mobile Phase 1 is Android-only; iOS build support is explicitly out of scope.
+- APK-only update checks, downloads, and installer handoff are in scope for Android and must not be rejected as post-phase work.
+- Expo OTA / EAS Update is out of scope; the approved solution is APK-only.
+- If update source switching is implemented, manifest fetch and APK download must stay on the same selected source.
+- `mobile-vX.Y.Z` and `mobile-latest` must be published with `latest=false`, so mobile never occupies GitHub repo Latest.
+- Mobile update discovery must read the fixed `mobile-latest/mobile-update.json` manifest; it must not enumerate mobile releases.
 
 ### 4. Validation & Error Matrix
 
@@ -78,7 +99,9 @@ interface IRecordRaw {
 | Import/export logic is implemented outside `packages/core` | Reject or refactor into `packages/core` |
 | New JSON format diverges from desktop v1 | Reject unless the implementation contract is updated first |
 | Canonical `Id` or legacy `id` is empty or whitespace-only | Reject the record and increment `Rejected` |
-| Agent suggests SecureStore, LAN sync, APK self-update, or iOS build support in Phase 1 | Reject as out of scope |
+| Agent suggests SecureStore, LAN sync, Expo OTA, or iOS build support in Phase 1 | Reject as out of scope |
+| Agent rejects APK-only update checks, downloads, or release metadata work as out of scope | Reject that rejection; the contract now approves mobile APK updates |
+| Agent routes mobile update discovery through `releases/latest` or a release list | Reject; mobile is fixed to `mobile-latest/mobile-update.json` |
 
 ### 5. Good/Base/Bad Cases
 
@@ -98,6 +121,8 @@ Phase 1 mobile implementation must add and run `packages/core` unit tests for:
 - Rejected empty or whitespace-only `Id` values for canonical and legacy imports.
 - Duplicate `Id` skip behavior.
 - Schema constants for `Records` and `Settings`.
+- `android-release.yml` syntax validation when release workflow or asset naming changes.
+- `mobile-update.json` / `mobile-latest` asset checks when release metadata changes.
 
 ### 7. Wrong vs Correct
 
@@ -147,6 +172,8 @@ Read this section when adding or modifying:
 ```text
 desktop-v<MAJOR>.<MINOR>.<PATCH>   → Electron release workflow
 mobile-v<MAJOR>.<MINOR>.<PATCH>    → Android APK release workflow
+mobile-latest                      → stable Android update channel
+desktop-latest                     → stable desktop update channel
 ```
 
 **Auto-update feed URLs:**
@@ -154,6 +181,11 @@ mobile-v<MAJOR>.<MINOR>.<PATCH>    → Android APK release workflow
 ```typescript
 // src/main/updateService.ts
 const DIRECT_UPDATE_FEED_URL = "https://github.com/zzzdajb/DickHelper/releases/download/desktop-latest/";
+```
+
+```text
+https://github.com/zzzdajb/DickHelper/releases/download/mobile-latest/mobile-update.json
+https://github.com/zzzdajb/DickHelper/releases/download/mobile-latest/DickHelper-mobile-latest.apk
 ```
 
 ```yaml
@@ -178,6 +210,11 @@ publish:
 - `release.yml` triggers on `desktop-v*.*.*` tags, **not** on `v*.*.*`.
 - After each desktop release, `desktop-latest` lightweight tag **must** be force-pushed to point to the new release tag. This is done by the `release.yml` publish-release job.
 - Desktop auto-update MUST use the `desktop-latest` tag URL, never `releases/latest`, to prevent mobile releases from breaking desktop update checks.
+- Mobile auto-update MUST use the `mobile-latest` tag/release URL, never `releases/latest`, to keep the mobile channel stable and isolated.
+- Mobile releases are formal releases, not prereleases, and they must be published with `latest=false`.
+- Mobile releases must be published with `latest=false`, so they never occupy GitHub repo Latest UI.
+- `android-release.yml` must publish both the versioned `mobile-vX.Y.Z` release and the stable `mobile-latest` asset set.
+- The stable mobile asset set must include `mobile-update.json`, the latest APK asset, and an explicit `apkSha256` (either embedded in the manifest or provided separately).
 - Android signing config is **injected at CI time** via a Node.js script (not sed). The script runs after `expo prebuild` and before `assembleRelease`.
 - `apps/mobile/android/` is gitignored — CI **must** run `npx expo prebuild --platform android` before Gradle.
 - `*.keystore` and `*.jks` are gitignored — keystore files must never be committed.
@@ -190,12 +227,16 @@ publish:
 | `ANDROID_KEYSTORE_BASE64` secret is empty or missing | CI fails with explicit error before Gradle runs |
 | Signing injection modifies wrong `signingConfigs.debug` occurrence | Release APK is signed with debug key — CI verification grep must catch this |
 | `desktop-latest` tag update fails (e.g., no force-push permission) | Release is still published, but auto-update points to stale version |
+| `mobile-latest` asset upload fails | Versioned mobile release still publishes, but the stable update channel is stale |
+| `mobile-update.json` SHA256 does not match the uploaded APK | Release should be treated as invalid and not promoted as the stable channel |
+| Mobile release is created without `latest=false` | Reject; the release can steal GitHub repo Latest from desktop |
 
 ### 5. Good/Base/Bad Cases
 
-- Good: Push `desktop-v2.0.6` → CI builds, publishes release, force-pushes `desktop-latest` → push `mobile-v0.0.1` → CI builds APK, publishes separate release. Both channels isolated.
-- Base: `releases/latest` URL used for auto-update — works until first mobile release breaks it.
+- Good: Push `desktop-v2.0.6` → CI builds, publishes release, force-pushes `desktop-latest` → push `mobile-v0.0.1` → CI builds APK, publishes the versioned `mobile-v0.0.1` release plus the `mobile-latest` manifest/APK assets. Both channels stay isolated.
+- Base: `releases/latest` URL used for auto-update — works until the mobile release channel needs to stay isolated.
 - Bad: Keystore password hardcoded in `build.gradle` or workflow YAML — leaks credentials in git history.
+- Bad: Mobile updater loops through release listings to find an APK — discovery must stay on the fixed manifest.
 
 ### 6. Tests Required
 
@@ -205,6 +246,8 @@ Before merging CI workflow changes, verify:
 - `release.yml` YAML syntax is valid
 - Signing injection Node.js script correctly modifies a sample `build.gradle` (second `signingConfigs.debug` → `signingConfigs.release`, first unchanged)
 - `updateService.ts` TypeScript compiles without errors
+- `mobile-update.json` and `mobile-latest` asset names match the documented convention.
+- `mobile-v*` and `mobile-latest` are created/edited with `latest=false`.
 
 ### 7. Wrong vs Correct
 

@@ -15,30 +15,31 @@
 - 移动端可通过 JSON 与桌面端迁移数据。
 - 移动端数据契约必须与当前 Electron 桌面端兼容。
 
-第一阶段不是完整跨平台同步版本，不实现局域网同步、APK 自更新、复杂统计图表或完整预测体验。
+当前移动端还不是完整跨平台同步版本，不实现局域网同步、Expo OTA/EAS Update、复杂统计图表或完整预测体验；但 Android APK-only 更新检查、下载、安装以及稳定 release 约定已经属于当前开发范围。
 
 ---
 
 ## 2. 硬禁止事项
 
-第一阶段禁止以下行为：
+当前禁止以下行为：
 
 1. 禁止配置 iOS 构建流程，禁止声称 iOS 可用或保证可编译。
 2. 禁止引入 `expo-secure-store`、Keychain、Keystore 或其他安全存储依赖。
 3. 禁止实现历史记录滑动删除；删除必须使用显式按钮和确认弹窗。
 4. 禁止实现桌面/移动局域网同步。
-5. 禁止实现 APK 自更新、更新源选择或更新下载入口。
+5. 禁止把更新方案做成 Expo OTA/EAS Update、EAS Update 或其他 JS 热更新；Android 更新必须走 APK-only 方案。
 6. 禁止替换冻结技术栈。
 7. 禁止把移动端 app 代码放进根目录 `src/**`。
 8. 禁止绕过 `packages/core` 自己实现另一套 JSON import/export、record validation 或 schema 常量。
-9. 禁止在设置页添加不可用或半成品入口，例如“同步”“更新源”“下载更新”。
-10. 禁止为了“最佳实践”自动纠正本文档中的业务决策。
+9. 禁止在设置页添加不可用或半成品入口，例如“同步”占位；已定义的 APK 更新入口（检查更新、下载、安装）除外。
+10. 禁止让移动端更新依赖 GitHub `releases/latest`；稳定通道必须使用独立的 `mobile-latest` 约定。
+11. 禁止为了“最佳实践”自动纠正本文档中的业务决策。
 
 ---
 
 ## 3. 冻结技术栈
 
-第一阶段必须使用：
+当前必须使用：
 
 | 领域 | 必须使用 |
 |------|----------|
@@ -74,7 +75,7 @@ docs/
   mobile-implementation-contract.md
 ```
 
-第一阶段过渡规则：
+当前过渡规则：
 
 - 现有 Electron 代码可以继续保留在根目录 `src/**`。
 - 新移动端代码必须放在 `apps/mobile/**`。
@@ -207,6 +208,48 @@ interface IImportResult {
 - `Skipped`: 因 `Id` 已存在而跳过的记录数。
 - `Rejected`: 格式无效、日期无效或 duration 无效的记录数。
 
+### 6.6 APK 更新清单
+
+Android APK 更新必须使用独立的 `mobile-update.json` 清单，作为移动端更新的权威元数据。
+
+清单形状如下：
+
+```json
+{
+  "version": "1.2.3",
+  "versionCode": 10203,
+  "publishedAt": "2026-05-27T08:00:00.000Z",
+  "notes": "optional release notes",
+  "apkUrl": "https://github.com/zzzdajb/DickHelper/releases/download/mobile-latest/DickHelper-mobile-latest.apk",
+  "apkSha256": "hex-encoded-sha256",
+  "force": false
+}
+```
+
+约束：
+
+- `version` 必须与 `mobile-vX.Y.Z` release tag 对应。
+- `versionCode` 必须是可比较的整数，由 release workflow 从 tag 生成。
+- `publishedAt` 记录发布时间，使用 UTC ISO string。
+- `notes` 是面向用户的发布说明，可为空字符串但必须存在。
+- `apkUrl` 必须指向 `mobile-latest` 稳定通道下的 APK 资产，不得使用 GitHub `releases/latest`。
+- `apkSha256` 必须明确存在；可以内嵌在清单里，也可以另外产出 checksum 资产，但发布物里必须可验证。
+- `force` 是可选字段，仅用于标记强制升级场景。
+- `mobile-vX.Y.Z` 和 `mobile-latest` 都是正式 release，不是 prerelease。
+- `mobile-vX.Y.Z` 和 `mobile-latest` release 都必须显式创建/编辑为 `latest=false`，这样它们不会占用 GitHub repo Latest UI。
+- Mobile 更新发现必须只读取 `mobile-latest/mobile-update.json`，不得通过枚举所有 mobile releases 来找新版本。
+
+### 6.7 更新源与入口
+
+如果移动端提供多个更新源，必须把 manifest 和 APK 下载视为同一条更新通道来切换：
+
+- `github` 表示 GitHub Release 直连源。
+- `mirror` 表示镜像源，必须代理同一套 `mobile-latest` 资产路径。
+- 更新源选择可以持久化到 `Settings` 表，但不得让 manifest 和 APK 下载走不同源。
+- 更新检查必须在启动时自动执行一次，同时也要能从设置页手动触发。
+- 当有可用更新时，设置页或更新弹窗必须提供下载与安装入口，而不是只显示只读提示。
+- GitHub repo Latest UI 只允许 desktop 线路占用，mobile release 不能通过 repo Latest 被发现或宣传。
+
 ---
 
 ## 7. 移动端 UI 范围
@@ -260,26 +303,27 @@ interface IImportResult {
 
 ### 7.5 设置页
 
-第一阶段必须实现：
+当前必须实现：
 
 - JSON 导入。
 - JSON 导出。
 - 关于/版本信息。
 - AI 配置入口占位。
+- APK 更新卡片：当前版本、远端版本/检查状态、手动检查更新按钮。
+- 可用更新时的下载与安装入口。
+- 若采用多源发布，提供更新源选择，并联动 manifest 与 APK 基址。
 
-第一阶段禁止实现：
+当前禁止实现：
 
 - 完整 AI 配置表单。
-- APK 更新设置。
 - 局域网同步入口。
-- 更新源选择。
-- 更新下载入口。
+- Expo OTA / EAS Update 入口。
 
 ---
 
 ## 8. 实现顺序
 
-第一阶段建议按以下顺序执行：
+当前建议按以下顺序执行：
 
 1. 调整 workspace：支持 `apps/*` 和 `packages/*`。
 2. 新增 `packages/core`，实现数据契约、JSON import/export、record validation、schema constants。
@@ -290,8 +334,10 @@ interface IImportResult {
 7. 用 `expo-sqlite` 实现 Records/Settings schema 和记录 CRUD。
 8. 实现记录页和历史页。
 9. 实现设置页 JSON 导入导出。
-10. 添加统计/预测轻量页或稳定占位。
-11. 运行质量门禁。
+10. 实现 APK-only 更新检查、下载与安装入口，并接入 `mobile-update.json`。
+11. 扩展 `.github/workflows/android-release.yml`，发布 `mobile-vX.Y.Z` 与 `mobile-latest` 两条资产线。
+12. 添加统计/预测轻量页或稳定占位。
+13. 运行质量门禁。
 
 ---
 
@@ -327,6 +373,12 @@ interface IImportResult {
 - 不强制 Android 真机截图测试。
 - 不强制 EAS Build。
 
+### 9.4 更新发布门禁
+
+- 修改 `.github/workflows/android-release.yml` 时必须验证 YAML 语法。
+- `mobile-latest` 资产集必须至少包含 `mobile-update.json`、最新 APK 资产，以及明确的 `apkSha256`。
+- 发布流程必须同时保留版本化 `mobile-vX.Y.Z` release 和稳定 `mobile-latest` release，不得让移动端和桌面端共用同一个 latest 通道。
+
 ---
 
 ## 10. 后置范围
@@ -334,7 +386,7 @@ interface IImportResult {
 以下能力明确后置，必须单独开任务并更新契约：
 
 - 桌面/移动局域网同步。
-- APK 自更新和 GitHub Releases 下载。
+- Expo OTA / EAS Update / 其他 JS 热更新方案。
 - 完整统计图表。
 - 24h 分布柱状图。
 - 热力图。
@@ -352,7 +404,10 @@ interface IImportResult {
 
 - [ ] 已阅读 `docs/mobile-architecture.md`。
 - [ ] 已阅读本文档。
-- [ ] 已确认当前任务是否属于 Phase 1。
+- [ ] 已确认当前任务是否仍属于当前 Android/mobile 范围。
+- [ ] 已确认 APK-only 更新是当前 Android 范围的一部分，不是 Expo OTA。
+- [ ] 已确认更新检查会在启动时自动执行，也可从设置页手动触发。
+- [ ] 已确认 `mobile-latest` 与 `mobile-update.json` 的稳定发布约定。
 - [ ] 已确认没有把移动端代码写入根 `src/**`。
 - [ ] 已确认数据契约相关逻辑进入 `packages/core`。
 - [ ] 已确认类型进入 `packages/shared`。
@@ -362,7 +417,7 @@ interface IImportResult {
 
 ## 12. 完成标准
 
-Phase 1 完成时必须满足：
+当前 Android/mobile 交付完成时必须满足：
 
 - Android mobile app 位于 `apps/mobile`。
 - 跨端 core 逻辑位于 `packages/core`。
@@ -371,5 +426,8 @@ Phase 1 完成时必须满足：
 - 移动端可删除记录，且删除有确认弹窗。
 - 移动端可导入桌面端 JSON。
 - 移动端可导出 canonical v1 JSON。
+- 移动端可在启动时自动检查更新，并从设置页手动触发检查。
+- `mobile-vX.Y.Z` 与 `mobile-latest` 两条 release 线都能正确发布。
+- `mobile-update.json` 中的 `apkSha256` 可用于验证最新 APK。
 - `packages/core` 测试通过。
 - Type-check、lint、测试命令已运行并记录结果。

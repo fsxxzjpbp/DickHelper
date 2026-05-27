@@ -156,7 +156,7 @@ jobs:
 
       - name: Collect APK artifacts
         run: |
-          mkdir -p release-assets
+          mkdir -p release-assets/versioned release-assets/mobile-latest
           APK=$(find apps/mobile/android/app/build/outputs/apk/release -name '*.apk' | head -1)
           if [ -z "$APK" ]; then
             echo "::error::No APK found in release output"
@@ -164,14 +164,42 @@ jobs:
             exit 1
           fi
           VERSION='${{ steps.version.outputs.version }}'
-          cp "$APK" "release-assets/DickHelper-${VERSION}-android.apk"
-          echo "APK: $(ls -lh release-assets/)"
+          VERSION_CODE='${{ steps.version.outputs.versionCode }}'
+          PUBLISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          VERSIONED_APK="release-assets/versioned/DickHelper-${VERSION}-android.apk"
+          LATEST_APK="release-assets/mobile-latest/DickHelper-mobile-latest.apk"
 
-      - name: Upload APK artifact
+          cp "$APK" "$VERSIONED_APK"
+          cp "$APK" "$LATEST_APK"
+
+          APK_SHA256=$(sha256sum "$LATEST_APK" | awk '{print $1}')
+          printf '%s  %s\n' "$APK_SHA256" "DickHelper-mobile-latest.apk" > release-assets/mobile-latest/DickHelper-mobile-latest.apk.sha256
+
+          VERSION="$VERSION" \
+          VERSION_CODE="$VERSION_CODE" \
+          PUBLISHED_AT="$PUBLISHED_AT" \
+          APK_SHA256="$APK_SHA256" \
+          GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+          node -e "const fs=require('fs'); const path=require('path'); const manifest={version:process.env.VERSION, versionCode:Number(process.env.VERSION_CODE), publishedAt:process.env.PUBLISHED_AT, notes:'Android APK for DickHelper Mobile v' + process.env.VERSION + '.', apkUrl:'https://github.com/' + process.env.GITHUB_REPOSITORY + '/releases/download/mobile-latest/DickHelper-mobile-latest.apk', apkSha256:process.env.APK_SHA256, force:false}; fs.writeFileSync(path.join('release-assets','mobile-latest','mobile-update.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');"
+
+          echo "Versioned assets:"
+          ls -lh release-assets/versioned/
+          echo "mobile-latest assets:"
+          ls -lh release-assets/mobile-latest/
+
+      - name: Upload versioned APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-release-${{ env.RELEASE_TAG }}
-          path: release-assets/*
+          path: release-assets/versioned/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload mobile-latest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-mobile-latest-${{ env.RELEASE_TAG }}
+          path: release-assets/mobile-latest/*
           if-no-files-found: error
           retention-days: 7
 
@@ -186,13 +214,24 @@ jobs:
       RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
     steps:
-      - name: Download APK artifact
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download versioned APK artifact
         uses: actions/download-artifact@v4
         with:
           name: android-release-${{ env.RELEASE_TAG }}
-          path: release-assets
+          path: release-assets/versioned
 
-      - name: Create GitHub Release
+      - name: Download mobile-latest artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-mobile-latest-${{ env.RELEASE_TAG }}
+          path: release-assets/mobile-latest
+
+      - name: Create GitHub Releases
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -200,20 +239,64 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          assets=(release-assets/*)
-          echo "Found ${#assets[@]} asset(s):"
-          for a in "${assets[@]}"; do
+          versioned_assets=(release-assets/versioned/*)
+          latest_assets=(release-assets/mobile-latest/*)
+
+          VERSION="${RELEASE_TAG#mobile-v}"
+          if [ ${#versioned_assets[@]} -eq 0 ]; then
+            echo "::error::No versioned release assets found in release-assets/versioned/"
+            ls -la release-assets/versioned/ || true
+            exit 1
+          fi
+
+          if [ ${#latest_assets[@]} -eq 0 ]; then
+            echo "::error::No mobile-latest assets found in release-assets/mobile-latest/"
+            ls -la release-assets/mobile-latest/ || true
+            exit 1
+          fi
+
+          echo "Versioned assets:"
+          for a in "${versioned_assets[@]}"; do
             echo "  - $a ($(du -h "$a" | cut -f1))"
           done
 
-          VERSION="${RELEASE_TAG#mobile-v}"
+          echo "mobile-latest assets:"
+          for a in "${latest_assets[@]}"; do
+            echo "  - $a ($(du -h "$a" | cut -f1))"
+          done
 
-          # TODO(prod): 正式发布时移除 --prerelease，避免 desktop auto-update 被 mobile release 污染 latest 指针
-          gh release delete "$RELEASE_TAG" --yes --repo "$GH_REPO" 2>/dev/null || true
-          gh release create "$RELEASE_TAG" "${assets[@]}" \
-            --title "DickHelper Mobile $VERSION" \
-            --notes "Android APK for DickHelper Mobile v$VERSION." \
-            --prerelease \
-            --repo "$GH_REPO"
+          if gh release view "$RELEASE_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "Versioned release exists. Uploading assets..."
+            gh release upload "$RELEASE_TAG" "${versioned_assets[@]}" --clobber --repo "$GH_REPO"
+            gh release edit "$RELEASE_TAG" \
+              --latest=false \
+              --repo "$GH_REPO"
+          else
+            echo "Creating versioned release..."
+            gh release create "$RELEASE_TAG" "${versioned_assets[@]}" \
+              --title "DickHelper Mobile $VERSION" \
+              --notes "Android APK for DickHelper Mobile v$VERSION." \
+              --latest=false \
+              --repo "$GH_REPO"
+          fi
 
-          echo "Release done: $RELEASE_TAG"
+          if gh release view "mobile-latest" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "mobile-latest release exists. Uploading assets..."
+            gh release upload "mobile-latest" "${latest_assets[@]}" --clobber --repo "$GH_REPO"
+            gh release edit "mobile-latest" \
+              --title "DickHelper Mobile latest" \
+              --notes "Stable Android update manifest and APK assets for DickHelper Mobile v$VERSION." \
+              --latest=false \
+              --repo "$GH_REPO"
+          else
+            echo "Creating mobile-latest release..."
+            gh release create "mobile-latest" "${latest_assets[@]}" \
+              --title "DickHelper Mobile latest" \
+              --notes "Stable Android update manifest and APK assets for DickHelper Mobile v$VERSION." \
+              --latest=false \
+              --repo "$GH_REPO"
+          fi
+
+          git tag -f mobile-latest "$RELEASE_TAG^{}"
+          git push origin -f mobile-latest
+          echo "mobile-latest tag updated to $RELEASE_TAG"

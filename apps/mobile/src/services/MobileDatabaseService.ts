@@ -23,10 +23,16 @@ interface IRecordRow {
     readonly Notes: string | null;
 }
 
+interface ISettingRow {
+    readonly Value: string;
+}
+
 const RECORD_SELECT_SQL = `SELECT ${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME} FROM ${RECORDS_TABLE_NAME} ORDER BY ${RECORD_END_TIME_COLUMN_NAME} DESC`;
 const RECORD_INSERT_SQL = `INSERT INTO ${RECORDS_TABLE_NAME} (${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}) VALUES (?, ?, ?, ?, ?)`;
 const RECORD_INSERT_OR_IGNORE_SQL = `INSERT OR IGNORE INTO ${RECORDS_TABLE_NAME} (${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}) VALUES (?, ?, ?, ?, ?)`;
 const RECORD_DELETE_SQL = `DELETE FROM ${RECORDS_TABLE_NAME} WHERE ${RECORD_ID_COLUMN_NAME} = ?`;
+const SETTING_SELECT_SQL = `SELECT ${SETTINGS_VALUE_COLUMN_NAME} FROM ${SETTINGS_TABLE_NAME} WHERE ${SETTINGS_KEY_COLUMN_NAME} = ? LIMIT 1`;
+const SETTING_UPSERT_SQL = `INSERT OR REPLACE INTO ${SETTINGS_TABLE_NAME} (${SETTINGS_KEY_COLUMN_NAME}, ${SETTINGS_VALUE_COLUMN_NAME}) VALUES (?, ?)`;
 
 export async function InitializeDatabase(db: SQLiteDatabase): Promise<void> {
     await db.execAsync(`
@@ -71,6 +77,15 @@ export class MobileDatabaseService {
     public async DeleteRecord(id: string): Promise<boolean> {
         const result = await this._db.runAsync(RECORD_DELETE_SQL, id);
         return result.changes > 0;
+    }
+
+    public async GetSetting(key: string): Promise<string | null> {
+        const rows = await this._db.getAllAsync<ISettingRow>(SETTING_SELECT_SQL, key);
+        return rows[0]?.Value ?? null;
+    }
+
+    public async SetSetting(key: string, value: string): Promise<void> {
+        await this._db.runAsync(SETTING_UPSERT_SQL, key, value);
     }
 
     public async ImportFromJson(jsonText: string): Promise<IImportResult> {

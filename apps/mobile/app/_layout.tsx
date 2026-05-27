@@ -8,6 +8,7 @@ import { Stack } from "expo-router";
 import { PaperProvider, Text } from "react-native-paper";
 import { appTheme } from "../src/theme";
 import { InitializeDatabase } from "../src/services/MobileDatabaseService";
+import { useMobileUpdateState } from "../src/hooks/useMobileUpdateState";
 
 function AppLoadingScreen() {
     return (
@@ -20,6 +21,14 @@ function AppLoadingScreen() {
     );
 }
 
+function MobileUpdateBootstrap() {
+    useMobileUpdateState({
+        autoCheckOnMount: true,
+    });
+
+    return null;
+}
+
 export default function RootLayout() {
     return (
         <GestureHandlerRootView style={styles.root}>
@@ -28,6 +37,7 @@ export default function RootLayout() {
                     <StatusBar style="dark" />
                     <Suspense fallback={<AppLoadingScreen />}>
                         <SQLiteProvider databaseName="dickhelper.db" onInit={InitializeDatabase} useSuspense>
+                            <MobileUpdateBootstrap />
                             <Stack
                                 screenOptions={{
                                     contentStyle: {
