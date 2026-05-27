@@ -419,3 +419,36 @@ Reviewed PR #35, posted review, pushed a simplified prediction-page commit to th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: 移动端版本号调整与文案优化
+
+**Date**: 2026-05-27
+**Task**: 移动端版本号调整与文案优化
+**Branch**: `main`
+
+### Summary
+
+移动端版本号从0.1.0调整为0.0.1对齐GitHub tag；修复历史页文案截断问题；优化四个页面subtitle文案，去除冗余描述，统一无句号风格；新增版本管理说明文档
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6673c9a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
