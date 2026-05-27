@@ -452,3 +452,37 @@ Reviewed PR #35, posted review, pushed a simplified prediction-page commit to th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Mobile APK-only update channel
+
+**Date**: 2026-05-27
+**Task**: Mobile APK-only update channel
+**Branch**: `main`
+
+### Summary
+
+Implemented Android APK-only updates with a fixed mobile-latest manifest channel, documented desktop/mobile release semantics, added mobile release workflow assets, and ignored desktop.ini.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `30ed63e` | (see git log) |
+| `663f473` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
