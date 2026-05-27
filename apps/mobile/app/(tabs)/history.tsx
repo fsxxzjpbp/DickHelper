@@ -46,7 +46,7 @@ export default function HistoryScreen() {
                     历史
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                    按结束时间倒序显示，删除前会先确认。
+                    按结束时间倒序显示
                 </Text>
             </View>
 
@@ -63,8 +63,8 @@ export default function HistoryScreen() {
                     <Text variant="titleMedium" style={styles.emptyTitle}>
                         {emptyText}
                     </Text>
-                    <Text variant="bodyMedium" style={styles.emptySubtitle}>
-                        先去“记录”页创建一条本地记录。
+                    <Text variant="bodyMedium" style={styles.emptySubtitle} numberOfLines={0}>
+                        {"先去「记录」页创建一条本地记录。"}
                     </Text>
                 </Surface>
             ) : (

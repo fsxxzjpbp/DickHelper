@@ -55,7 +55,7 @@ export default function StatsScreen() {
                     统计
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                    仅展示轻量指标，不包含图表或热力图。
+                    追踪频率、时长与近期趋势
                 </Text>
             </View>
 

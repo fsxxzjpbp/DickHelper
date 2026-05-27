@@ -2,7 +2,7 @@
   "expo": {
     "name": "DickHelper",
     "slug": "dickhelper-mobile",
-    "version": "0.1.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "scheme": "dickhelper-mobile",
     "platforms": [

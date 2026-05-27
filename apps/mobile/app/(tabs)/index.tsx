@@ -75,7 +75,7 @@ export default function RecordScreen() {
                     记录
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                    开始、暂停、继续、结束并保存到本地 SQLite。
+                    轻点开始，完成后自动记录到本地
                 </Text>
             </View>
 

@@ -73,7 +73,7 @@ export default function PredictionScreen() {
                     预测
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                    仅做本地简单提示，不调用 AI 模型。
+                    根据你的记录推测下一次
                 </Text>
             </View>
 

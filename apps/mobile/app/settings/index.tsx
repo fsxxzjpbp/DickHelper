@@ -17,7 +17,7 @@ export default function SettingsScreen() {
     const [busy, setBusy] = useState<boolean>(false);
     const [message, setMessage] = useState<string | null>(null);
 
-    const appVersion = Constants.expoConfig?.version ?? "0.1.0";
+    const appVersion = Constants.expoConfig?.version ?? "0.0.1";
 
     const HandleImport = async (): Promise<void> => {
         setBusy(true);
