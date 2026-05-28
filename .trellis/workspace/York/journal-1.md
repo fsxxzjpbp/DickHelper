@@ -557,3 +557,36 @@ Implemented Android APK-only updates with a fixed mobile-latest manifest channel
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Mobile sync dialog
+
+**Date**: 2026-05-28
+**Task**: Mobile sync dialog
+**Branch**: `main`
+
+### Summary
+
+Changed mobile sync result display from Snackbar to Dialog with success/failure styling
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `201be1e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

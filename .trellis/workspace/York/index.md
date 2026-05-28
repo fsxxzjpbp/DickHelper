@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-05-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~559 | Active |
+| `journal-1.md` | ~592 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-05-28 | Mobile sync dialog | `201be1e` | `main` |
 | 16 | 2026-05-28 | LAN Sync: 桌面端-移动端局域网HTTP同步 | `aca418b`, `3620aec`, `2386c5c`, `4f7a4be`, `3d6f387` | `main` |
 | 15 | 2026-05-28 | Fix PC auto-update 404 | `f27a4e7`, `96ada48` | `main` |
 | 14 | 2026-05-27 | Mobile APK-only update channel | `30ed63e`, `663f473` | `main` |
