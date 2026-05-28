@@ -119,26 +119,13 @@ export class SyncService {
             return { Imported: 0, Skipped: 0, Rejected: 0 };
         }
 
-        const totalRejected = parsed.Rejected;
-        let imported = 0;
-        let skipped = parsed.DuplicateIds;
+        const result = this._databaseService.ImportRecords(parsed.Records);
 
-        for (const record of parsed.Records) {
-            if (this._databaseService.RecordExists(record.Id)) {
-                skipped++;
-                continue;
-            }
-
-            this._databaseService.SaveRecord(
-                new Date(record.StartTime),
-                new Date(record.EndTime),
-                record.Duration,
-                record.Notes ?? undefined
-            );
-            imported++;
-        }
-
-        return { Imported: imported, Skipped: skipped, Rejected: totalRejected };
+        return {
+            Imported: result.Imported,
+            Skipped: result.Skipped + parsed.DuplicateIds,
+            Rejected: result.Rejected + parsed.Rejected,
+        };
     }
 
     private GetDesktopRecordsAsJson(): string {
