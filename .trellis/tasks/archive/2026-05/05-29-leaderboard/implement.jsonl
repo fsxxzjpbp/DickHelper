@@ -1,0 +1,13 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend spec overview for the Electron renderer"}
+{"file": ".trellis/spec/frontend/app-shell.md", "reason": "AppShell structure — sidebar nav where the new 'online' tab will be added"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component patterns for building the OnlineView and Settings section"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "State patterns for managing onlineConfig (uuid, nickname, enabled)"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Code style conventions for renderer code"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Where to place new view components and services"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript patterns for the new types"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Custom hook patterns for useOnlineService hook"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — relevant for Electron main process changes"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error handling patterns for network failures (Cloudflare unstable in China)"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Where to place new main process service code"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Guide for extracting shared logic to packages/core"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Guide for coordinating changes across core/frontend/backend layers"}

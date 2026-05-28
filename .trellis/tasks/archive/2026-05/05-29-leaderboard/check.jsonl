@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality checklist for code review"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Code style compliance check"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript strictness check"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component pattern compliance"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "State management pattern compliance"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend quality checklist"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error handling compliance — network failures must be explicit"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer consistency check"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Code reuse compliance — shared logic in packages/core"}
