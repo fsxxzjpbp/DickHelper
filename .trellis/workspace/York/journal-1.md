@@ -520,3 +520,40 @@ Implemented Android APK-only updates with a fixed mobile-latest manifest channel
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: LAN Sync: 桌面端-移动端局域网HTTP同步
+
+**Date**: 2026-05-28
+**Task**: LAN Sync: 桌面端-移动端局域网HTTP同步
+**Branch**: `main`
+
+### Summary
+
+实现桌面端(Electron)与移动端(Expo)的局域网数据同步。桌面端作为HTTP server(POST /api/sync)，手机端作为client，单次请求完成双向全量同步(INSERT OR IGNORE)。新增ISyncResponse/ISyncStatus类型、SyncService、MobileSyncService、桌面端和移动端Settings UI。修复Android cleartext HTTP限制(Expo config plugin)。优化CI Gradle/node_modules缓存。更新mobile spec。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `aca418b` | (see git log) |
+| `3620aec` | (see git log) |
+| `2386c5c` | (see git log) |
+| `4f7a4be` | (see git log) |
+| `3d6f387` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
