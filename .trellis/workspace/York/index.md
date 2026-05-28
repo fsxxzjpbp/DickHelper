@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 17
+- **Total Sessions**: 18
 - **Last Active**: 2026-05-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~592 | Active |
+| `journal-1.md` | ~625 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 18 | 2026-05-28 | Fix P0: desktop-mobile sync dedup bug | `1e135db` | `main` |
 | 17 | 2026-05-28 | Mobile sync dialog | `201be1e` | `main` |
 | 16 | 2026-05-28 | LAN Sync: 桌面端-移动端局域网HTTP同步 | `aca418b`, `3620aec`, `2386c5c`, `4f7a4be`, `3d6f387` | `main` |
 | 15 | 2026-05-28 | Fix PC auto-update 404 | `f27a4e7`, `96ada48` | `main` |

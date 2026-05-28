@@ -590,3 +590,36 @@ Changed mobile sync result display from Snackbar to Dialog with success/failure 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Fix P0: desktop-mobile sync dedup bug
+
+**Date**: 2026-05-28
+**Task**: Fix P0: desktop-mobile sync dedup bug
+**Branch**: `main`
+
+### Summary
+
+Fixed ImportMobileRecords in syncService.ts — was calling SaveRecord() which discarded the incoming record Id, causing unbounded duplication on every sync. Replaced with existing ImportRecords() which preserves original Ids.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1e135db` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
