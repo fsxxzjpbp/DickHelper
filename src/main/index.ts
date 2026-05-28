@@ -3,12 +3,14 @@ import path from "node:path";
 import { DatabaseService } from "./database";
 import { Analyze as AiAnalyze, type IAiConfig } from "./ai-service";
 import { UpdateService } from "./updateService";
+import { SyncService } from "./syncService";
 import type { IHourlyCount, IMonthlyCount, IWeekdayCount } from "@dickhelper/shared";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let databaseService: DatabaseService | null = null;
 let updateService: UpdateService | null = null;
+let syncService: SyncService | null = null;
 let isQuitting: boolean = false;
 
 const IS_DEV: boolean = process.env.ELECTRON_RENDERER_URL !== undefined;
@@ -353,6 +355,21 @@ function RegisterIpcHandlers(): void {
     ipcMain.handle("shell:open-external", (_event, url: string) => {
         return shell.openExternal(url);
     });
+
+    ipcMain.handle("sync:start", (_event, port: unknown) => {
+        const syncPort: number = typeof port === "number" ? port : 9527;
+        syncService!.Start(syncPort);
+        return syncService!.GetStatus();
+    });
+
+    ipcMain.handle("sync:stop", () => {
+        syncService!.Stop();
+        return syncService!.GetStatus();
+    });
+
+    ipcMain.handle("sync:get-status", () => {
+        return syncService!.GetStatus();
+    });
 }
 
 // 单例锁：禁止多个实例，防止多个托盘图标
@@ -378,6 +395,7 @@ if (!gotTheLock) {
         console.log("[Main] DatabaseService initialized");
         InitProxy();
         updateService = new UpdateService(() => mainWindow);
+        syncService = new SyncService(databaseService);
         RegisterIpcHandlers();
         CreateWindow();
         CreateTray();

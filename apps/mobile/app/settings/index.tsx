@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, List, ProgressBar, SegmentedButtons, Snackbar, Surface, Text } from "react-native-paper";
+import { Button, List, ProgressBar, SegmentedButtons, Snackbar, Surface, Text, TextInput } from "react-native-paper";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -10,6 +10,7 @@ import { useMobileDatabaseService } from "../../src/hooks/useMobileDatabaseServi
 import { useMobileUpdateState } from "../../src/hooks/useMobileUpdateState";
 import { useRecords } from "../../src/hooks/useRecords";
 import { FormatDateTime } from "../../src/utils/formatters";
+import { SyncWithDesktop } from "../../src/services/MobileSyncService";
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -19,6 +20,9 @@ export default function SettingsScreen() {
         useMobileUpdateState();
     const [busy, setBusy] = useState<boolean>(false);
     const [message, setMessage] = useState<string | null>(null);
+    const [syncAddress, setSyncAddress] = useState<string>("");
+    const [syncPort, setSyncPort] = useState<string>("9527");
+    const [syncing, setSyncing] = useState<boolean>(false);
 
     const isUpdateActionBusy = updateState.IsChecking || updateState.IsDownloading || updateState.IsInstalling;
     const hasUpdateDetails = updateState.AvailableVersion !== null;
@@ -137,6 +141,34 @@ export default function SettingsScreen() {
         }
     };
 
+    const HandleSync = async (): Promise<void> => {
+        const trimmedAddress = syncAddress.trim();
+        if (trimmedAddress.length === 0) {
+            setMessage("请输入桌面端 IP 地址");
+            return;
+        }
+
+        const parsedPort = parseInt(syncPort, 10);
+        if (isNaN(parsedPort) || parsedPort <= 0 || parsedPort > 65535) {
+            setMessage("端口号无效，请输入 1-65535 之间的数字");
+            return;
+        }
+
+        setSyncing(true);
+        try {
+            const result = await SyncWithDesktop(trimmedAddress, parsedPort, database);
+            await refresh();
+            setMessage(
+                `同步完成：导入 ${result.Imported} 条，跳过 ${result.Skipped} 条，拒绝 ${result.Rejected} 条`
+            );
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setMessage(`同步失败：${errorMessage}`);
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     return (
         <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.header}>
@@ -170,6 +202,51 @@ export default function SettingsScreen() {
                         disabled={busy}
                     />
                 </List.Section>
+            </Surface>
+
+            <Surface style={styles.sectionSurface} elevation={1}>
+                <View style={styles.updateHeader}>
+                    <Text variant="titleMedium" style={styles.sectionTitle}>
+                        局域网同步
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.sectionSubtitle}>
+                        连接桌面端进行数据同步，需先在桌面端启动同步服务。
+                    </Text>
+                </View>
+
+                <TextInput
+                    label="桌面端 IP 地址"
+                    placeholder="192.168.1.100"
+                    value={syncAddress}
+                    onChangeText={setSyncAddress}
+                    disabled={busy || syncing}
+                    mode="outlined"
+                    style={styles.textInput}
+                />
+
+                <TextInput
+                    label="端口号"
+                    placeholder="9527"
+                    value={syncPort}
+                    onChangeText={setSyncPort}
+                    disabled={busy || syncing}
+                    mode="outlined"
+                    keyboardType="numeric"
+                    style={styles.textInput}
+                />
+
+                <Button
+                    mode="contained"
+                    icon="sync"
+                    onPress={() => {
+                        void HandleSync();
+                    }}
+                    loading={syncing}
+                    disabled={busy || syncing || syncAddress.trim().length === 0}
+                    style={styles.actionButton}
+                >
+                    开始同步
+                </Button>
             </Surface>
 
             <Surface style={styles.sectionSurface} elevation={1}>
@@ -522,5 +599,8 @@ const styles = StyleSheet.create({
     aboutHint: {
         color: "#64748b",
         marginTop: 4,
+    },
+    textInput: {
+        backgroundColor: "#ffffff",
     },
 });

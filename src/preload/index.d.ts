@@ -6,6 +6,7 @@ import type {
     IImportResult,
     IUpdateSettings,
     IUpdateState,
+    ISyncStatus,
     UpdateSource,
     IHourlyCount,
     IWeekdayCount,
@@ -48,6 +49,9 @@ declare global {
             SetUpdateProxy: (enabled: boolean) => Promise<void>;
             GetUpdateProxy: () => Promise<boolean>;
             OpenExternal: (url: string) => Promise<void>;
+            SyncStart: (port?: number) => Promise<ISyncStatus>;
+            SyncStop: () => Promise<ISyncStatus>;
+            SyncGetStatus: () => Promise<ISyncStatus>;
         };
     }
 }

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
-import type { IUpdateSettings, IUpdateState, UpdateSource } from "@dickhelper/shared";
+import type { IUpdateSettings, IUpdateState, ISyncStatus, UpdateSource } from "@dickhelper/shared";
 
 console.log("[Preload] Script loading...");
 
@@ -47,6 +47,9 @@ const electronAPI = {
             (settings: IUpdateSettings) => settings.ProxyEnabled
         ),
     OpenExternal: (url: string): Promise<void> => ipcRenderer.invoke("shell:open-external", url),
+    SyncStart: (port?: number): Promise<ISyncStatus> => ipcRenderer.invoke("sync:start", port),
+    SyncStop: (): Promise<ISyncStatus> => ipcRenderer.invoke("sync:stop"),
+    SyncGetStatus: (): Promise<ISyncStatus> => ipcRenderer.invoke("sync:get-status"),
 };
 
 try {

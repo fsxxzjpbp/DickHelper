@@ -28,8 +28,10 @@ import {
     IconStar,
     IconUpload,
     IconWorld,
+    IconWifi,
 } from "@tabler/icons-react";
 import { DatabaseService } from "../services/DatabaseService";
+import { SyncService } from "../services/SyncService";
 import { UpdateService } from "../services/UpdateService";
 import { useRecords } from "../hooks/useRecords";
 import { useUpdateState } from "../hooks/useUpdateState";
@@ -210,6 +212,8 @@ export const Settings = () => {
                     </Notification>
                 )}
             </Paper>
+
+            <LanSyncSection />
 
             <AiConfigSection />
 
@@ -473,6 +477,136 @@ const AiConfigSection = () => {
                     <Alert color="red" icon={<IconAlertCircle size={18} />} title="保存失败">
                         {saveError}
                     </Alert>
+                )}
+            </Stack>
+        </Paper>
+    );
+};
+
+const LanSyncSection = () => {
+    const [syncStatus, setSyncStatus] = useState<{ Running: boolean; Port: number; Addresses: readonly string[] }>({
+        Running: false,
+        Port: 0,
+        Addresses: [],
+    });
+    const [syncLoading, setSyncLoading] = useState<boolean>(false);
+    const [syncMessage, setSyncMessage] = useState<string | null>(null);
+    const syncMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        SyncService.GetStatus()
+            .then(setSyncStatus)
+            .catch(() => {});
+    }, []);
+
+    const ShowSyncMessage = (msg: string): void => {
+        setSyncMessage(msg);
+        if (syncMessageTimerRef.current !== null) {
+            clearTimeout(syncMessageTimerRef.current);
+        }
+        syncMessageTimerRef.current = setTimeout(() => {
+            setSyncMessage(null);
+        }, 5000);
+    };
+
+    const HandleStartSync = async (): Promise<void> => {
+        setSyncLoading(true);
+        try {
+            const status = await SyncService.Start();
+            setSyncStatus(status);
+            ShowSyncMessage("同步服务已启动");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            ShowSyncMessage(`启动失败：${message}`);
+        } finally {
+            setSyncLoading(false);
+        }
+    };
+
+    const HandleStopSync = async (): Promise<void> => {
+        setSyncLoading(true);
+        try {
+            const status = await SyncService.Stop();
+            setSyncStatus(status);
+            ShowSyncMessage("同步服务已停止");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            ShowSyncMessage(`停止失败：${message}`);
+        } finally {
+            setSyncLoading(false);
+        }
+    };
+
+    const isRunning: boolean = syncStatus.Running;
+    const statusColor: string = isRunning ? "green" : "gray";
+    const statusText: string = isRunning ? "运行中" : "未启动";
+
+    return (
+        <Paper shadow="sm" radius="md" p="lg" withBorder>
+            <Group justify="space-between" align="flex-start" mb="xs">
+                <Group gap="sm">
+                    <IconWifi size={22} />
+                    <Title order={4}>局域网同步</Title>
+                </Group>
+                <Badge variant="light" color={statusColor}>
+                    {statusText}
+                </Badge>
+            </Group>
+            <Text size="sm" c="dimmed" mb="md">
+                启动同步服务后，手机端可通过 IP 地址连接并同步记录数据。
+            </Text>
+
+            <Stack gap="sm">
+                {isRunning && syncStatus.Addresses.length > 0 && (
+                    <Group gap="xs" align="center">
+                        <Text size="sm" c="dimmed">连接地址：</Text>
+                        {syncStatus.Addresses.map((addr) => (
+                            <Badge key={addr} variant="outline" color="blue">
+                                {addr}:{syncStatus.Port}
+                            </Badge>
+                        ))}
+                    </Group>
+                )}
+
+                {isRunning && syncStatus.Addresses.length === 0 && (
+                    <Text size="sm" c="dimmed">
+                        未检测到局域网 IP 地址，请检查网络连接。
+                    </Text>
+                )}
+
+                <Group>
+                    {isRunning ? (
+                        <Button
+                            variant="outline"
+                            color="red"
+                            leftSection={<IconWifi size={16} />}
+                            onClick={HandleStopSync}
+                            loading={syncLoading}
+                        >
+                            停止服务
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            color="green"
+                            leftSection={<IconWifi size={16} />}
+                            onClick={HandleStartSync}
+                            loading={syncLoading}
+                        >
+                            启动服务
+                        </Button>
+                    )}
+                </Group>
+
+                {syncMessage !== null && (
+                    <Notification
+                        color="blue"
+                        title="同步服务"
+                        onClose={() => setSyncMessage(null)}
+                        withCloseButton
+                    >
+                        {syncMessage}
+                    </Notification>
                 )}
             </Stack>
         </Paper>

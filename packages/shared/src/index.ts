@@ -11,3 +11,4 @@ export type {
 } from "./IRecord";
 export type { IMobileExportV1 } from "./IMobileExport";
 export type { ILegacyRecordImportRow, IRecordImportParseResult, IRecordIdStatistics } from "./IRecordImport";
+export type { ISyncResponse, ISyncStatus } from "./ISync";
