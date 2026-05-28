@@ -12,6 +12,7 @@ import {
     Modal,
     Button,
     Text,
+    Tooltip,
 } from "@mantine/core";
 import {
     IconClock,
@@ -21,6 +22,7 @@ import {
     IconDroplet,
     IconDownload,
     IconBolt,
+    IconCloud,
 } from "@tabler/icons-react";
 import "@mantine/core/styles.css";
 import { RecordForm } from "./views/RecordForm";
@@ -28,10 +30,12 @@ import { StatsChart } from "./views/StatsChart";
 import { HistoryList } from "./views/HistoryList";
 import { Settings } from "./views/Settings";
 import { Prediction } from "./views/Prediction";
+import { OnlineView } from "./views/OnlineView";
 import { useUpdateState } from "./hooks/useUpdateState";
+import { useOnlineService } from "./hooks/useOnlineService";
 import { UpdateService } from "./services/UpdateService";
 
-type View = "record" | "stats" | "history" | "prediction" | "settings";
+type View = "record" | "stats" | "history" | "prediction" | "settings" | "online";
 
 interface IErrorBoundaryProps { children: ReactNode; }
 interface IErrorBoundaryState { hasError: boolean; error: Error | null; }
@@ -96,6 +100,13 @@ export const App = () => {
     const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<string | null>(null);
     const [dismissedDownloadedVersion, setDismissedDownloadedVersion] = useState<string | null>(null);
     const { UpdateState } = useUpdateState();
+    const {
+        onlineState,
+        enableOnline,
+        disableOnline,
+        fetchDailyRanking,
+        fetchWeeklyRanking,
+    } = useOnlineService();
 
     const updateVersion: string | null = UpdateState?.AvailableVersion ?? null;
     const shouldShowUpdateModal: boolean =
@@ -207,6 +218,22 @@ export const App = () => {
                                 style={{ borderRadius: 8 }}
                             />
                         ))}
+                        <Tooltip
+                            label="请先在设置中启用在线功能"
+                            disabled={onlineState.enabled}
+                            position="right"
+                            withArrow
+                        >
+                            <NavLink
+                                label="在线"
+                                leftSection={<IconCloud size={20} />}
+                                active={activeView === "online"}
+                                onClick={() => setActiveView("online")}
+                                variant="filled"
+                                style={{ borderRadius: 8 }}
+                                disabled={!onlineState.enabled}
+                            />
+                        </Tooltip>
                     </Stack>
 
                     <Divider mb="xs" />
@@ -226,7 +253,20 @@ export const App = () => {
                     {activeView === "stats" && <StatsChart />}
                     {activeView === "prediction" && <Prediction />}
                     {activeView === "history" && <HistoryList />}
-                    {activeView === "settings" && <Settings />}
+                    {activeView === "online" && (
+                        <OnlineView
+                            onlineState={onlineState}
+                            fetchDailyRanking={fetchDailyRanking}
+                            fetchWeeklyRanking={fetchWeeklyRanking}
+                        />
+                    )}
+                    {activeView === "settings" && (
+                        <Settings
+                            onlineState={onlineState}
+                            onEnableOnline={enableOnline}
+                            onDisableOnline={disableOnline}
+                        />
+                    )}
                 </AppShell.Main>
             </AppShell>
         </MantineProvider>

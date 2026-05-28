@@ -29,12 +29,14 @@ import {
     IconUpload,
     IconWorld,
     IconWifi,
+    IconCloud,
 } from "@tabler/icons-react";
 import { DatabaseService } from "../services/DatabaseService";
 import { SyncService } from "../services/SyncService";
 import { UpdateService } from "../services/UpdateService";
 import { useRecords } from "../hooks/useRecords";
 import { useUpdateState } from "../hooks/useUpdateState";
+import type { IOnlineState } from "../hooks/useOnlineService";
 import type { UpdateSource, UpdateStatus } from "@dickhelper/shared";
 
 const AI_PROVIDER_OPTIONS: { value: string; label: string }[] = [
@@ -71,7 +73,13 @@ const GetUpdateSourceValue = (value: string): UpdateSource => {
     return "mirror";
 };
 
-export const Settings = () => {
+interface ISettingsProps {
+    readonly onlineState?: IOnlineState;
+    readonly onEnableOnline?: () => Promise<string>;
+    readonly onDisableOnline?: () => Promise<void>;
+}
+
+export const Settings = ({ onlineState, onEnableOnline, onDisableOnline }: ISettingsProps) => {
     const { records, refresh } = useRecords();
     const { UpdateState } = useUpdateState();
     const [importMessage, setImportMessage] = useState<string | null>(null);
@@ -215,6 +223,14 @@ export const Settings = () => {
 
             <LanSyncSection />
 
+            {onlineState !== undefined && onEnableOnline !== undefined && onDisableOnline !== undefined && (
+                <OnlineSection
+                    onlineState={onlineState}
+                    onEnableOnline={onEnableOnline}
+                    onDisableOnline={onDisableOnline}
+                />
+            )}
+
             <AiConfigSection />
 
             <Paper shadow="sm" radius="md" p="lg" withBorder>
@@ -354,6 +370,131 @@ export const Settings = () => {
                 </Stack>
             </Paper>
         </Stack>
+    );
+};
+
+interface IOnlineSectionProps {
+    readonly onlineState: IOnlineState;
+    readonly onEnableOnline: () => Promise<string>;
+    readonly onDisableOnline: () => Promise<void>;
+}
+
+const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnlineSectionProps) => {
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [showConfirmDisable, setShowConfirmDisable] = useState<boolean>(false);
+
+    const MaskUUID = (uuid: string): string => {
+        if (uuid.length <= 8) return uuid;
+        return uuid.slice(0, 4) + "****" + uuid.slice(-4);
+    };
+
+    const HandleToggle = async (enabled: boolean): Promise<void> => {
+        if (enabled) {
+            setLoading(true);
+            setError(null);
+            try {
+                await onEnableOnline();
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                setError(`启用失败：${message}`);
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            setShowConfirmDisable(true);
+        }
+    };
+
+    const HandleConfirmDisable = async (): Promise<void> => {
+        setShowConfirmDisable(false);
+        setLoading(true);
+        setError(null);
+        try {
+            await onDisableOnline();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(`禁用失败：${message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Paper shadow="sm" radius="md" p="lg" withBorder>
+            <Group justify="space-between" align="flex-start" mb="xs">
+                <Group gap="sm">
+                    <IconCloud size={22} />
+                    <Title order={4}>在线功能</Title>
+                </Group>
+                <Badge variant="light" color={onlineState.enabled ? "green" : "gray"}>
+                    {onlineState.enabled ? "已启用" : "未启用"}
+                </Badge>
+            </Group>
+            <Text size="sm" c="dimmed" mb="md">
+                启用在线排行榜功能，与其他用户比拼数据。数据通过 Cloudflare Worker 传输，匿名参与。
+            </Text>
+
+            <Stack gap="sm">
+                <Group justify="space-between" align="center">
+                    <Text size="sm" c="dimmed">启用在线功能</Text>
+                    <Switch
+                        checked={onlineState.enabled}
+                        onChange={(event) => HandleToggle(event.currentTarget.checked)}
+                        disabled={loading}
+                    />
+                </Group>
+
+                {onlineState.enabled && onlineState.nickname !== null && (
+                    <>
+                        <Divider />
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">昵称</Text>
+                            <Text size="sm" fw={500}>{onlineState.nickname}</Text>
+                        </Group>
+                        {onlineState.uuid !== null && (
+                            <Group justify="space-between">
+                                <Text size="sm" c="dimmed">UUID</Text>
+                                <Text size="sm" fw={500} ff="monospace">
+                                    {MaskUUID(onlineState.uuid)}
+                                </Text>
+                            </Group>
+                        )}
+                    </>
+                )}
+
+                {showConfirmDisable && (
+                    <Alert color="red" title="确认禁用" icon={<IconAlertCircle size={18} />}>
+                        <Text size="sm" mb="sm">
+                            禁用在线功能后，你的排行榜数据将从服务器删除。此操作不可撤销。
+                        </Text>
+                        <Group>
+                            <Button
+                                color="red"
+                                size="xs"
+                                onClick={HandleConfirmDisable}
+                                loading={loading}
+                            >
+                                确认禁用
+                            </Button>
+                            <Button
+                                variant="subtle"
+                                size="xs"
+                                onClick={() => setShowConfirmDisable(false)}
+                            >
+                                取消
+                            </Button>
+                        </Group>
+                    </Alert>
+                )}
+
+                {error !== null && (
+                    <Alert color="red" icon={<IconAlertCircle size={18} />} title="错误">
+                        {error}
+                    </Alert>
+                )}
+            </Stack>
+        </Paper>
     );
 };
 

@@ -12,3 +12,14 @@ export type {
 export type { IMobileExportV1 } from "./IMobileExport";
 export type { ILegacyRecordImportRow, IRecordImportParseResult, IRecordIdStatistics } from "./IRecordImport";
 export type { ISyncResponse, ISyncStatus } from "./ISync";
+export type {
+    IRegisterRequest,
+    IRegisterResponse,
+    IReportRequest,
+    IRankingEntry,
+    IUserRanking,
+    IRankingResponse,
+    ISuccessResponse,
+    IErrorResponse,
+    IOnlineConfig,
+} from "./ILeaderboard";

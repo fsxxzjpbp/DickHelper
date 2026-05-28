@@ -11,3 +11,21 @@ export {
     SETTINGS_VALUE_COLUMN_NAME,
 } from "./schema";
 export { ExportRecordsToJson, GetRecordIdStatistics, ParseImportJson } from "./recordImportExport";
+export {
+    registerLeaderboard,
+    reportDailyStats,
+    getDailyRanking,
+    getWeeklyRanking,
+    deleteAccount,
+} from "./leaderboardClient";
+export {
+    getDateInUTC8,
+    getCurrentWeekUTC8,
+    getWeekDates,
+    aggregateDailyStats,
+} from "./leaderboardAggregation";
+export {
+    generateUUID,
+    getOnlineConfig,
+    setOnlineConfig,
+} from "./leaderboardStorage";
