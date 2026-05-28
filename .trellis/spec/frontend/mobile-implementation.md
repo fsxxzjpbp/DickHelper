@@ -99,7 +99,7 @@ interface IMobileUpdateManifest {
 | Import/export logic is implemented outside `packages/core` | Reject or refactor into `packages/core` |
 | New JSON format diverges from desktop v1 | Reject unless the implementation contract is updated first |
 | Canonical `Id` or legacy `id` is empty or whitespace-only | Reject the record and increment `Rejected` |
-| Agent suggests SecureStore, LAN sync, Expo OTA, or iOS build support in Phase 1 | Reject as out of scope |
+| Agent suggests SecureStore, Expo OTA, or iOS build support in Phase 1 | Reject as out of scope |
 | Agent rejects APK-only update checks, downloads, or release metadata work as out of scope | Reject that rejection; the contract now approves mobile APK updates |
 | Agent routes mobile update discovery through `releases/latest` or a release list | Reject; mobile is fixed to `mobile-latest/mobile-update.json` |
 
@@ -281,3 +281,42 @@ on:
 // updateService.ts — pinned to desktop channel
 const URL = "https://github.com/.../releases/download/desktop-latest/";
 ```
+
+---
+
+## Scenario: Expo Config Plugins
+
+### 1. Scope / Trigger
+
+Read this section when modifying Android native behavior via `app.json` or config plugins.
+
+### 2. Key Facts
+
+- Expo `app.json` only supports documented properties under `expo.android`. Non-standard properties (e.g., `usesCleartextTraffic`) are silently ignored during `npx expo prebuild`.
+- To modify `AndroidManifest.xml`, create a config plugin in `apps/mobile/plugins/` using `withAndroidManifest` from `expo/config-plugins`.
+- Config plugins are registered in `app.json` under `expo.plugins` as relative paths (e.g., `"./plugins/withCleartextTraffic.js"`).
+
+### 3. Config Plugin Pattern
+
+```javascript
+const { withAndroidManifest, AndroidConfig } = require("expo/config-plugins");
+
+function withMyPlugin(config) {
+    return withAndroidManifest(config, (mod) => {
+        const mainApplication = AndroidConfig.Manifest.getMainApplication(mod.modResults);
+        if (mainApplication?.$) {
+            mainApplication.$["android:someAttribute"] = "true";
+        }
+        return mod;
+    });
+}
+
+module.exports = withMyPlugin;
+```
+
+### 4. Pitfalls
+
+- `createAndroidManifestPlugin` is NOT exported from `expo/config-plugins` — use `withAndroidManifest` directly.
+- The callback receives `{ modRequest, modResults, ...config }`, NOT `{ manifest }`. Access the manifest via `mod.modResults`.
+- Always test locally with `npx expo prebuild --platform android --clean` before pushing to CI.
+- After adding a config plugin, the `apps/mobile/android/` directory must be regenerated (`--clean` flag or delete the directory).
