@@ -1,0 +1,6 @@
+{"file": "packages/shared/src/IRecord.ts", "reason": "Verify sync types align with existing record types"}
+{"file": "packages/core/src/recordImportExport.ts", "reason": "Verify sync reuses existing import/export correctly"}
+{"file": "src/main/database.ts", "reason": "Verify sync service uses database API correctly"}
+{"file": "src/main/index.ts", "reason": "Verify IPC registration follows existing patterns"}
+{"file": "src/preload/index.ts", "reason": "Verify preload bridge additions follow pattern"}
+{"file": "apps/mobile/src/services/MobileDatabaseService.ts", "reason": "Verify mobile sync uses existing methods correctly"}

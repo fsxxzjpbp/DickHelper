@@ -1,0 +1,13 @@
+{"file": "packages/shared/src/IRecord.ts", "reason": "Core record types (IRecord, IRecordRaw, IImportResult) used in sync protocol"}
+{"file": "packages/shared/src/IMobileExport.ts", "reason": "IMobileExportV1 format reused as sync request/response body"}
+{"file": "packages/core/src/recordImportExport.ts", "reason": "ExportRecordsToJson and ParseImportJson — the sync merge logic"}
+{"file": "packages/core/src/schema.ts", "reason": "Table/column name constants for database operations"}
+{"file": "src/main/database.ts", "reason": "Desktop DatabaseService API: GetRecords, ImportRecords, RecordExists"}
+{"file": "src/main/index.ts", "reason": "Main process entry: IPC registration pattern, startup sequence, ALLOWED_AI_SETTING_KEYS"}
+{"file": "src/preload/index.ts", "reason": "Preload bridge pattern for adding new IPC channels"}
+{"file": "src/preload/index.d.ts", "reason": "Type declarations for window.electronAPI"}
+{"file": "src/renderer/services/DatabaseService.ts", "reason": "Renderer service pattern: static class with GetApi() delegation"}
+{"file": "src/renderer/views/Settings.tsx", "reason": "Settings page UI pattern for adding sync section"}
+{"file": "apps/mobile/src/services/MobileDatabaseService.ts", "reason": "Mobile ExportToJson and ImportFromJson methods"}
+{"file": "apps/mobile/src/hooks/useMobileDatabaseService.ts", "reason": "Hook pattern for accessing MobileDatabaseService"}
+{"file": "apps/mobile/app/settings/index.tsx", "reason": "Mobile settings screen pattern for adding sync section"}
