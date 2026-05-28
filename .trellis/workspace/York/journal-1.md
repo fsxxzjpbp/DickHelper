@@ -623,3 +623,38 @@ Fixed ImportMobileRecords in syncService.ts — was calling SaveRecord() which d
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: Fix P0 sync dedup + mobile seconds display
+
+**Date**: 2026-05-28
+**Task**: Fix P0 sync dedup + mobile seconds display
+**Branch**: `main`
+
+### Summary
+
+Fixed P0 desktop-mobile sync dedup bug: ImportMobileRecords was discarding incoming record Ids (SaveRecord generates new UUID). Replaced with ImportRecords which preserves original Ids. Added content-based dedup (StartTime+EndTime+Duration match). Also added seconds to mobile history datetime format.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1e135db` | (see git log) |
+| `3a5a0d1` | (see git log) |
+| `a05ac7d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
