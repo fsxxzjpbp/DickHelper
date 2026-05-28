@@ -18,14 +18,14 @@
       "permissions": [
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "predictiveBackGestureEnabled": true,
-      "usesCleartextTraffic": true
+      "predictiveBackGestureEnabled": true
     },
     "plugins": [
       "expo-router",
       "expo-sqlite",
       "expo-sharing",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/withCleartextTraffic.js"
     ]
   }
 }
