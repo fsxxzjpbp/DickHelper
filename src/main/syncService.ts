@@ -119,7 +119,9 @@ export class SyncService {
             return { Imported: 0, Skipped: 0, Rejected: 0 };
         }
 
-        const result = this._databaseService.ImportRecords(parsed.Records);
+        const result = this._databaseService.ImportRecords(
+            parsed.Records.map((r) => ({ ...r, Notes: r.Notes ?? undefined }))
+        );
 
         return {
             Imported: result.Imported,
