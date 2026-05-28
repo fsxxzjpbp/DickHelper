@@ -316,6 +316,14 @@ export class DatabaseService {
                 finalStartTime = new Date(endDate.getTime() - record.Duration * 60 * 1000);
             }
 
+            // 内容去重：StartTime + EndTime + Duration 完全一致视为同一条记录
+            if (this._queryOne(
+                `SELECT 1 FROM ${TABLE_NAME} WHERE StartTime = ? AND EndTime = ? AND Duration = ?`,
+                [finalStartTime.toISOString(), endDate.toISOString(), record.Duration]
+            )) {
+                continue;
+            }
+
             stmt.bind([record.Id, finalStartTime.toISOString(), endDate.toISOString(), record.Duration, record.Notes ?? null]);
             stmt.step();
             stmt.reset();
