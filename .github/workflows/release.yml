@@ -184,3 +184,32 @@ jobs:
           git tag -f desktop-latest "$RELEASE_TAG^{}"
           git push origin -f desktop-latest
           echo "desktop-latest tag updated to $RELEASE_TAG"
+
+      - name: Update desktop-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          assets=(release-assets/*)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "::error::No release assets found for desktop-latest"
+            exit 1
+          fi
+
+          if gh release view desktop-latest --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "desktop-latest release exists. Updating assets..."
+            gh release upload desktop-latest "${assets[@]}" --clobber --repo "$GH_REPO"
+          else
+            echo "Creating desktop-latest release..."
+            gh release create desktop-latest "${assets[@]}" \
+              --title "desktop-latest" \
+              --notes "Auto-updated to $RELEASE_TAG" \
+              --latest=false \
+              --repo "$GH_REPO"
+          fi
+
+          echo "Verifying desktop-latest release assets:"
+          gh release view desktop-latest --repo "$GH_REPO" --json assets --jq '.assets[] | "  \(.name) (\(.size) bytes)"' || echo "(could not verify)"

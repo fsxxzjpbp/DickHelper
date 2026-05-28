@@ -34,16 +34,18 @@ this._autoUpdater.setFeedURL({
 Two update feed URLs are defined as constants:
 
 ```typescript
-const DIRECT_UPDATE_FEED_URL = "https://github.com/zzzdajb/DickHelper/releases/latest/download/";
+const DIRECT_UPDATE_FEED_URL = "https://github.com/zzzdajb/DickHelper/releases/download/desktop-latest/";
 const MIRROR_UPDATE_FEED_URL = `https://ghfast.top/${DIRECT_UPDATE_FEED_URL}`;
 ```
 
 | Source key | Label in UI | Feed URL | Use case |
 |-----------|-------------|----------|----------|
-| `"mirror"` (default) | ghfast 镜像 | `https://ghfast.top/https://github.com/.../latest/download/` | Users behind restrictive networks |
-| `"github"` | GitHub 直连 | `https://github.com/.../latest/download/` | Users with direct GitHub access |
+| `"mirror"` (default) | ghfast 镜像 | `https://ghfast.top/https://github.com/.../releases/download/desktop-latest/` | Users behind restrictive networks |
+| `"github"` | GitHub 直连 | `https://github.com/.../releases/download/desktop-latest/` | Users with direct GitHub access |
 
 The mirror URL is constructed by prefixing the direct URL with `https://ghfast.top/`. ghfast.top is a GitHub release acceleration proxy that forwards the `latest.yml` and installer files.
+
+> **WHY `desktop-latest` tag instead of `/releases/latest/download/`**: This repo has both desktop and mobile releases. GitHub's `/releases/latest/download/` redirects to the most recent release overall, which could be a mobile release. Using a dedicated `desktop-latest` tag with its own GitHub Release ensures the URL always points to the latest desktop build. The release workflow creates/updates both the git tag and the GitHub Release for `desktop-latest` on every desktop release.
 
 ### Source Persistence
 
