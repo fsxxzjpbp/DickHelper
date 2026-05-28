@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, List, ProgressBar, SegmentedButtons, Snackbar, Surface, Text, TextInput } from "react-native-paper";
+import { Button, Dialog, List, Portal, ProgressBar, SegmentedButtons, Snackbar, Surface, Text, TextInput } from "react-native-paper";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -23,6 +23,9 @@ export default function SettingsScreen() {
     const [syncAddress, setSyncAddress] = useState<string>("");
     const [syncPort, setSyncPort] = useState<string>("9527");
     const [syncing, setSyncing] = useState<boolean>(false);
+    const [syncDialogVisible, setSyncDialogVisible] = useState<boolean>(false);
+    const [syncDialogSuccess, setSyncDialogSuccess] = useState<boolean>(true);
+    const [syncDialogContent, setSyncDialogContent] = useState<string>("");
 
     const isUpdateActionBusy = updateState.IsChecking || updateState.IsDownloading || updateState.IsInstalling;
     const hasUpdateDetails = updateState.AvailableVersion !== null;
@@ -158,12 +161,14 @@ export default function SettingsScreen() {
         try {
             const result = await SyncWithDesktop(trimmedAddress, parsedPort, database);
             await refresh();
-            setMessage(
-                `同步完成：导入 ${result.Imported} 条，跳过 ${result.Skipped} 条，拒绝 ${result.Rejected} 条`
-            );
+            setSyncDialogSuccess(true);
+            setSyncDialogContent(`导入 ${result.Imported} 条，跳过 ${result.Skipped} 条，拒绝 ${result.Rejected} 条`);
+            setSyncDialogVisible(true);
         } catch (caught: unknown) {
             const errorMessage = caught instanceof Error ? caught.message : String(caught);
-            setMessage(`同步失败：${errorMessage}`);
+            setSyncDialogSuccess(false);
+            setSyncDialogContent(errorMessage);
+            setSyncDialogVisible(true);
         } finally {
             setSyncing(false);
         }
@@ -440,6 +445,20 @@ export default function SettingsScreen() {
                     当前记录数：{records.length}，最近一条：{records[0] !== undefined ? FormatDateTime(records[0].EndTime) : "暂无"}
                 </Text>
             </Surface>
+
+            <Portal>
+                <Dialog visible={syncDialogVisible} onDismiss={() => setSyncDialogVisible(false)}>
+                    <Dialog.Title style={{ color: syncDialogSuccess ? "#16a34a" : "#dc2626" }}>
+                        {syncDialogSuccess ? "同步成功" : "同步失败"}
+                    </Dialog.Title>
+                    <Dialog.Content>
+                        <Text variant="bodyMedium">{syncDialogContent}</Text>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setSyncDialogVisible(false)}>确定</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
 
             <Snackbar visible={message !== null} onDismiss={() => setMessage(null)} duration={3200}>
                 {message}
