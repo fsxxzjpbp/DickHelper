@@ -658,3 +658,37 @@ Fixed P0 desktop-mobile sync dedup bug: ImportMobileRecords was discarding incom
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: feat(leaderboard): Cloudflare Worker + D1 排行榜系统
+
+**Date**: 2026-05-29
+**Task**: feat(leaderboard): Cloudflare Worker + D1 排行榜系统
+**Branch**: `main`
+
+### Summary
+
+实现在线排行榜系统：Cloudflare Worker + D1 后端（注册/上报/排名查询/注销 5个API），packages/core 共用逻辑（API客户端/聚合/存储），Electron 桌面端集成（设置页开关/在线页面/定时上报）。用户 opt-in 开启在线功能，UUID 作为身份+认证凭证，服务端分配随机昵称，支持每日/每周次数和时长排行，显示百分位+Top N 列表。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5088350` | (see git log) |
+| `af0c073` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
