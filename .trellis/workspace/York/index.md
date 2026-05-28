@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
-- **Last Active**: 2026-05-27
+- **Total Sessions**: 15
+- **Last Active**: 2026-05-28
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~488 | Active |
+| `journal-1.md` | ~522 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-05-28 | Fix PC auto-update 404 | `f27a4e7`, `96ada48` | `main` |
 | 14 | 2026-05-27 | Mobile APK-only update channel | `30ed63e`, `663f473` | `main` |
 | 13 | 2026-05-27 | 移动端版本号调整与文案优化 | `6673c9a` | `main` |
 | 12 | 2026-05-26 | Android CI workflow 开发与调试 | `61484d7`, `8916f16`, `42b3062`, `32f6ef6`, `cc2fb93`, `968b540` | `main` |

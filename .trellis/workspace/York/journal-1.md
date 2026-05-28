@@ -486,3 +486,37 @@ Implemented Android APK-only updates with a fixed mobile-latest manifest channel
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Fix PC auto-update 404
+
+**Date**: 2026-05-28
+**Task**: Fix PC auto-update 404
+**Branch**: `main`
+
+### Summary
+
+修复 desktop 自动更新 404 错误：release workflow 只创建了 git tag 而非 GitHub Release，导致 electron-updater 无法获取 latest.yml。在 workflow 中新增步骤创建 desktop-latest Release，同步修正 spec 中的 URL。Bump 至 v2.0.7 触发发布。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f27a4e7` | (see git log) |
+| `96ada48` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
