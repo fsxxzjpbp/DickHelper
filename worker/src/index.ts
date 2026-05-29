@@ -6,6 +6,7 @@ import type {
   Env,
   RegisterRequest,
   ReportRequest,
+  BatchReportRequest,
   RankingResponse,
   RankingStats,
   SuccessResponse,
@@ -171,6 +172,53 @@ app.post('/api/v1/report', async (c) => {
     return c.json<SuccessResponse>({ success: true });
   } catch (error) {
     console.error('Report error:', error);
+    return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /api/v1/report/batch
+app.post('/api/v1/report/batch', async (c) => {
+  try {
+    const auth = await authenticateUser(c);
+    if ('error' in auth) {
+      return c.json<ErrorResponse>(auth, 401);
+    }
+
+    const body = await c.req.json<BatchReportRequest>();
+    const { stats } = body;
+
+    if (!Array.isArray(stats) || stats.length === 0) {
+      return c.json<ErrorResponse>({ error: 'Invalid stats array' }, 400);
+    }
+
+    // Validate each entry
+    for (const entry of stats) {
+      if (!entry.date || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) {
+        return c.json<ErrorResponse>({ error: `Invalid date format: ${entry.date}` }, 400);
+      }
+      if (typeof entry.count !== 'number' || entry.count < 0) {
+        return c.json<ErrorResponse>({ error: `Invalid count for date ${entry.date}` }, 400);
+      }
+      if (typeof entry.duration !== 'number' || entry.duration < 0) {
+        return c.json<ErrorResponse>({ error: `Invalid duration for date ${entry.date}` }, 400);
+      }
+    }
+
+    // Batch UPSERT all entries
+    const statements = stats.map((entry) =>
+      c.env.DB.prepare(`
+        INSERT INTO daily_stats (uuid, date, count, duration, updated_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        ON CONFLICT (uuid, date)
+        DO UPDATE SET count = ?, duration = ?, updated_at = datetime('now')
+      `).bind(auth.uuid, entry.date, entry.count, entry.duration, entry.count, entry.duration)
+    );
+
+    await c.env.DB.batch(statements);
+
+    return c.json<SuccessResponse>({ success: true });
+  } catch (error) {
+    console.error('Batch report error:', error);
     return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
   }
 });

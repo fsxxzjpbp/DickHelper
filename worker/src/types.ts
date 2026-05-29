@@ -30,6 +30,10 @@ export interface ReportRequest {
   duration: number;
 }
 
+export interface BatchReportRequest {
+  stats: ReportRequest[];
+}
+
 export interface RankingEntry {
   rank: number;
   nickname: string;

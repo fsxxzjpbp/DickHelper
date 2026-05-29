@@ -44,8 +44,10 @@ database_id = "你的数据库ID"
 ### 2. 执行数据库迁移
 
 ```bash
-npm run migrate
+npm run migrate -- --remote
 ```
+
+> **注意：** 必须加 `--remote` 参数，否则迁移只会应用到本地开发数据库，不会应用到 Cloudflare 上的远端数据库。`--` 是 npm 传参的分隔符，后面的 `--remote` 会传给 wrangler。
 
 这会创建 `users` 和 `daily_stats` 两张表。
 
@@ -127,6 +129,26 @@ curl -X DELETE http://localhost:8787/api/v1/account \
   "date": "2026-05-29",
   "count": 3,
   "duration": 45.5
+}
+```
+
+**响应：**
+```json
+{ "success": true }
+```
+
+### POST /api/v1/report/batch
+
+批量上报多天统计数据。一次请求上报所有历史数据，按 (uuid, date) UPSERT，幂等操作。
+
+**请求体：**
+```json
+{
+  "stats": [
+    { "date": "2026-05-27", "count": 2, "duration": 30.5 },
+    { "date": "2026-05-28", "count": 1, "duration": 15.0 },
+    { "date": "2026-05-29", "count": 3, "duration": 45.5 }
+  ]
 }
 ```
 
@@ -218,14 +240,14 @@ curl -X DELETE http://localhost:8787/api/v1/account \
 通过 Wrangler CLI 直接操作 D1 数据库：
 
 ```bash
-# 查看总用户数
-wrangler d1 execute dickhelper-leaderboard --command "SELECT COUNT(*) FROM users"
+# 查看总用户数（远端）
+wrangler d1 execute dickhelper-leaderboard --remote --command "SELECT COUNT(*) FROM users"
 
-# 查看今日活跃用户
-wrangler d1 execute dickhelper-leaderboard --command "SELECT COUNT(*) FROM daily_stats WHERE date = date('now', '+8 hours')"
+# 查看今日活跃用户（远端）
+wrangler d1 execute dickhelper-leaderboard --remote --command "SELECT COUNT(*) FROM daily_stats WHERE date = date('now', '+8 hours')"
 
-# 查看排行榜前10
-wrangler d1 execute dickhelper-leaderboard --command "
+# 查看排行榜前10（远端）
+wrangler d1 execute dickhelper-leaderboard --remote --command "
   SELECT u.nickname, ds.count, ds.duration
   FROM daily_stats ds
   JOIN users u ON ds.uuid = u.uuid
@@ -255,7 +277,7 @@ wrangler d1 execute dickhelper-leaderboard --command "
 A: 中国大陆访问 Cloudflare 可能不稳定。确认 Worker URL 正确，尝试使用自定义域名。
 
 **Q: 注册返回 500 错误**
-A: 检查 D1 数据库是否已创建并执行了迁移。运行 `npm run migrate`。
+A: 检查 D1 数据库是否已创建并执行了迁移。运行 `npm run migrate -- --remote`（注意 `--remote` 参数，否则只迁移本地数据库）。
 
 **Q: 排行榜数据不更新**
 A: 数据上报是幂等的（UPSERT），确认客户端已开启在线功能且网络正常。排行榜显示的是最后一次上报的数据。
