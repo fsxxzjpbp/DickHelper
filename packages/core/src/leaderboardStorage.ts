@@ -1,7 +1,7 @@
 import type { IOnlineConfig } from "@dickhelper/shared";
 
 const STORAGE_KEY = "dickhelper_online_config";
-const DEFAULT_BASE_URL = "https://dickhelper-api.djangb.workers.dev";
+const DEFAULT_BASE_URL = "https://dickhelper.sakuraseasons.space";
 
 // Generate UUID v4 — uses crypto.randomUUID() if available, manual fallback otherwise.
 export function generateUUID(): string {
