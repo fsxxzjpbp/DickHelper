@@ -364,7 +364,7 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
             )}
 
             {/* Server Stats */}
-            {stats !== null && total > 0 && (
+            {stats !== null && (
                 <Paper shadow="sm" radius="md" p="md" withBorder>
                     <Stack gap="xs">
                         <Text size="sm" fw={600}>全服{periodLabel}平均值</Text>
