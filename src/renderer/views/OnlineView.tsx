@@ -67,16 +67,20 @@ export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchW
                 let data: IRankingResponse;
                 if (period === "daily") {
                     const today = getDateInUTC8(new Date());
+                    console.log("[OnlineView] Fetching daily ranking:", { today, rankingType });
                     data = await fetchDailyRanking(today, PAGE_SIZE, newOffset, rankingType);
                 } else {
                     const week = getCurrentWeekUTC8();
+                    console.log("[OnlineView] Fetching weekly ranking:", { week, rankingType });
                     data = await fetchWeeklyRanking(week, PAGE_SIZE, newOffset, rankingType);
                 }
 
+                console.log("[OnlineView] Ranking response:", JSON.stringify(data));
                 setRankingData(data);
                 setOffset(newOffset);
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);
+                console.error("[OnlineView] Ranking fetch error:", message);
                 setError(message);
             } finally {
                 setLoading(false);
@@ -90,9 +94,13 @@ export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchW
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            reportStats().finally(() => {
-                void loadRanking(0);
-            });
+            console.log("[OnlineView] Initial mount — reporting stats first...");
+            reportStats()
+                .then(() => console.log("[OnlineView] Report done, now fetching ranking..."))
+                .catch((err: unknown) => console.warn("[OnlineView] Report failed:", err))
+                .finally(() => {
+                    void loadRanking(0);
+                });
         } else {
             void loadRanking(0);
         }
@@ -275,7 +283,7 @@ export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchW
                                         <Text size="sm" fw={500}>
                                             {rankingType === "count"
                                                 ? entry.count
-                                                : Math.round(entry.duration)}
+                                                : entry.duration.toFixed(1)}
                                         </Text>
                                     </Table.Td>
                                 </Table.Tr>
@@ -320,7 +328,7 @@ export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchW
                         </Group>
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">总时长</Text>
-                            <Text size="sm" fw={500}>{Math.round(me.duration)} 分钟</Text>
+                            <Text size="sm" fw={500}>{me.duration.toFixed(1)} 分钟</Text>
                         </Group>
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">百分位</Text>
