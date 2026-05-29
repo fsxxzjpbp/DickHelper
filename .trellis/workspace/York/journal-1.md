@@ -760,3 +760,48 @@ Added sort parameter (count/duration) to daily and weekly ranking endpoints. Add
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: Leaderboard fixes: full sync, batch API, UI polish
+
+**Date**: 2026-05-30
+**Task**: Leaderboard fixes: full sync, batch API, UI polish
+**Branch**: `main`
+
+### Summary
+
+Fixed registration not syncing historical data: added full history sync via batch report endpoint (POST /api/v1/report/batch), removed redundant single report endpoint, increased sync interval to 12h. Fixed rank display for no-data users (rank 1 instead of 0). Added server average stats display, re-roll nickname feature, and duration precision to 1 decimal place. Deployed D1 migration, updated default server URL.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `49b80cc` | (see git log) |
+| `ac5d829` | (see git log) |
+| `6c6a449` | (see git log) |
+| `b27375c` | (see git log) |
+| `e705f4e` | (see git log) |
+| `4981e4e` | (see git log) |
+| `861a57d` | (see git log) |
+| `4d5abc6` | (see git log) |
+| `50b9fd6` | (see git log) |
+| `901caf1` | (see git log) |
+| `3fe80f6` | (see git log) |
+| `75605ac` | (see git log) |
+| `40903b3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

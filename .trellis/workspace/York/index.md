@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 22
+- **Total Sessions**: 23
 - **Last Active**: 2026-05-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~762 | Active |
+| `journal-1.md` | ~807 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 23 | 2026-05-30 | Leaderboard fixes: full sync, batch API, UI polish | `49b80cc`, `ac5d829`, `6c6a449`, `b27375c`, `e705f4e`, `4981e4e`, `861a57d`, `4d5abc6`, `50b9fd6`, `901caf1`, `3fe80f6`, `75605ac`, `40903b3` | `main` |
 | 22 | 2026-05-30 | Ranking API: sort parameter and server-side stats | `d9e5c14`, `52828fc`, `cf0ce8e` | `main` |
 | 21 | 2026-05-30 | Review and fix Cloudflare Workers+D1 online features | `07e8c38` | `main` |
 | 20 | 2026-05-29 | feat(leaderboard): Cloudflare Worker + D1 排行榜系统 | `5088350`, `af0c073` | `main` |
