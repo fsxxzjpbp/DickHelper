@@ -152,24 +152,24 @@ export function useOnlineService() {
 
     // Fetch daily ranking
     const fetchDailyRanking = useCallback(
-        async (date?: string, limit?: number, offset?: number): Promise<IRankingResponse> => {
+        async (date?: string, limit?: number, offset?: number, sort?: "count" | "duration"): Promise<IRankingResponse> => {
             const config = getOnlineConfig();
             if (config.uuid === null) {
                 throw new Error("在线功能未启用");
             }
-            return getDailyRanking(config.baseUrl, config.uuid, date, limit, offset);
+            return getDailyRanking(config.baseUrl, config.uuid, date, limit, offset, sort);
         },
         []
     );
 
     // Fetch weekly ranking
     const fetchWeeklyRanking = useCallback(
-        async (week?: string, limit?: number, offset?: number): Promise<IRankingResponse> => {
+        async (week?: string, limit?: number, offset?: number, sort?: "count" | "duration"): Promise<IRankingResponse> => {
             const config = getOnlineConfig();
             if (config.uuid === null) {
                 throw new Error("在线功能未启用");
             }
-            return getWeeklyRanking(config.baseUrl, config.uuid, week, limit, offset);
+            return getWeeklyRanking(config.baseUrl, config.uuid, week, limit, offset, sort);
         },
         []
     );

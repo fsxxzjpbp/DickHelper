@@ -28,8 +28,8 @@ import type { IOnlineState } from "../hooks/useOnlineService";
 
 interface IOnlineViewProps {
     readonly onlineState: IOnlineState;
-    readonly fetchDailyRanking: (date?: string, limit?: number, offset?: number) => Promise<IRankingResponse>;
-    readonly fetchWeeklyRanking: (week?: string, limit?: number, offset?: number) => Promise<IRankingResponse>;
+    readonly fetchDailyRanking: (date?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
+    readonly fetchWeeklyRanking: (week?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
 }
 
 const PAGE_SIZE = 10;
@@ -66,10 +66,10 @@ export const OnlineView = ({ onlineState, fetchDailyRanking, fetchWeeklyRanking 
                 let data: IRankingResponse;
                 if (period === "daily") {
                     const today = getDateInUTC8(new Date());
-                    data = await fetchDailyRanking(today, PAGE_SIZE, newOffset);
+                    data = await fetchDailyRanking(today, PAGE_SIZE, newOffset, rankingType);
                 } else {
                     const week = getCurrentWeekUTC8();
-                    data = await fetchWeeklyRanking(week, PAGE_SIZE, newOffset);
+                    data = await fetchWeeklyRanking(week, PAGE_SIZE, newOffset, rankingType);
                 }
 
                 setRankingData(data);
@@ -81,7 +81,7 @@ export const OnlineView = ({ onlineState, fetchDailyRanking, fetchWeeklyRanking 
                 setLoading(false);
             }
         },
-        [period, fetchDailyRanking, fetchWeeklyRanking]
+        [period, rankingType, fetchDailyRanking, fetchWeeklyRanking]
     );
 
     // Load ranking on mount and when period changes
