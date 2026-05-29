@@ -8,9 +8,7 @@ import {
     Notification,
     Paper,
     PasswordInput,
-    Progress,
     Select,
-    SegmentedControl,
     Stack,
     Switch,
     Text,
@@ -21,57 +19,21 @@ import {
     IconAlertCircle,
     IconBrain,
     IconDatabase,
-    IconDownload,
-    IconInfoCircle,
-    IconRefresh,
-    IconRocket,
-    IconStar,
     IconUpload,
-    IconWorld,
+    IconDownload,
     IconWifi,
     IconCloud,
+    IconServer,
 } from "@tabler/icons-react";
 import { DatabaseService } from "../services/DatabaseService";
 import { SyncService } from "../services/SyncService";
-import { UpdateService } from "../services/UpdateService";
 import { useRecords } from "../hooks/useRecords";
-import { useUpdateState } from "../hooks/useUpdateState";
 import type { IOnlineState } from "../hooks/useOnlineService";
-import type { UpdateSource, UpdateStatus } from "@dickhelper/shared";
 
 const AI_PROVIDER_OPTIONS: { value: string; label: string }[] = [
     { value: "local", label: "本地规则分析" },
     { value: "openai", label: "OpenAI 兼容接口" },
 ];
-
-const GetUpdateStatusText = (status: UpdateStatus | undefined): string => {
-    switch (status) {
-        case "checking":
-            return "检查中";
-        case "available":
-            return "发现新版本";
-        case "downloading":
-            return "下载中";
-        case "downloaded":
-            return "已下载";
-        case "not-available":
-            return "已是最新";
-        case "error":
-            return "检查失败";
-        case "disabled":
-            return "开发模式";
-        default:
-            return "空闲";
-    }
-};
-
-const GetUpdateSourceValue = (value: string): UpdateSource => {
-    if (value === "github") {
-        return "github";
-    }
-
-    return "mirror";
-};
 
 interface ISettingsProps {
     readonly onlineState?: IOnlineState;
@@ -81,30 +43,9 @@ interface ISettingsProps {
 
 export const Settings = ({ onlineState, onEnableOnline, onDisableOnline }: ISettingsProps) => {
     const { records, refresh } = useRecords();
-    const { UpdateState } = useUpdateState();
     const [importMessage, setImportMessage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const importTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const updateSource: UpdateSource = UpdateState?.Source ?? "mirror";
-    const currentVersion: string = UpdateState?.CurrentVersion ?? "2.0.0";
-    const updateStatusText: string = GetUpdateStatusText(UpdateState?.Status);
-    const updateProgress: number = UpdateState?.DownloadProgress ?? 0;
-    const isChecking: boolean = UpdateState?.IsChecking === true;
-    const isDownloading: boolean = UpdateState?.IsDownloading === true;
-
-    const [proxyEnabled, setProxyEnabled] = useState<boolean>(true);
-
-    useEffect(() => {
-        UpdateService.GetProxy()
-            .then(setProxyEnabled)
-            .catch(() => setProxyEnabled(true));
-    }, []);
-
-    const HandleProxyToggle = (enabled: boolean): void => {
-        setProxyEnabled(enabled);
-        void UpdateService.SetProxy(enabled);
-    };
 
     const HandleExport = async (): Promise<void> => {
         const allRecords = await DatabaseService.GetRecords();
@@ -149,22 +90,6 @@ export const Settings = ({ onlineState, onEnableOnline, onDisableOnline }: ISett
             HandleImport(file);
         }
         e.target.value = "";
-    };
-
-    const HandleSourceChange = (value: string): void => {
-        void UpdateService.SetSource(GetUpdateSourceValue(value));
-    };
-
-    const HandleCheckUpdate = (): void => {
-        void UpdateService.CheckForUpdates();
-    };
-
-    const HandleDownloadUpdate = (): void => {
-        void UpdateService.DownloadUpdate();
-    };
-
-    const HandleInstallUpdate = (): void => {
-        void UpdateService.InstallUpdate();
     };
 
     return (
@@ -232,143 +157,6 @@ export const Settings = ({ onlineState, onEnableOnline, onDisableOnline }: ISett
             )}
 
             <AiConfigSection />
-
-            <Paper shadow="sm" radius="md" p="lg" withBorder>
-                <Group justify="space-between" align="flex-start" mb="xs">
-                    <Group gap="sm">
-                        <IconWorld size={22} />
-                        <Title order={4}>应用更新</Title>
-                    </Group>
-                    <Badge
-                        variant="light"
-                        color={UpdateState?.Status === "error" ? "red" : "blue"}
-                    >
-                        {updateStatusText}
-                    </Badge>
-                </Group>
-
-                <Text size="sm" c="dimmed" mb="md">
-                    启动时自动检查更新，发现新版本后由您决定是否下载。
-                </Text>
-
-                <Stack gap="md">
-                    <Group justify="space-between" align="center">
-                        <Text size="sm" c="dimmed">更新源</Text>
-                        <SegmentedControl
-                            value={updateSource}
-                            onChange={(value) => {
-                                HandleSourceChange(value);
-                            }}
-                            data={[
-                                { label: "ghfast 镜像", value: "mirror" },
-                                { label: "GitHub 直连", value: "github" },
-                            ]}
-                        />
-                    </Group>
-
-                    <Divider />
-
-                    <Group justify="space-between" align="center">
-                        <Text size="sm" c="dimmed">使用系统代理</Text>
-                        <Switch
-                            checked={proxyEnabled}
-                            onChange={(event) => HandleProxyToggle(event.currentTarget.checked)}
-                        />
-                    </Group>
-
-                    <Divider />
-
-                    <Group justify="space-between">
-                        <Text size="sm" c="dimmed">当前版本</Text>
-                        <Text size="sm" fw={500}>v{currentVersion}</Text>
-                    </Group>
-
-                    {UpdateState?.AvailableVersion !== null && UpdateState?.AvailableVersion !== undefined && (
-                        <>
-                            <Divider />
-                            <Group justify="space-between">
-                                <Text size="sm" c="dimmed">可用版本</Text>
-                                <Text size="sm" fw={500}>v{UpdateState.AvailableVersion}</Text>
-                            </Group>
-                        </>
-                    )}
-
-                    {isDownloading && (
-                        <Progress value={updateProgress} animated />
-                    )}
-
-                    {UpdateState?.ErrorMessage !== null && UpdateState?.ErrorMessage !== undefined && (
-                        <Alert
-                            color="red"
-                            icon={<IconAlertCircle size={18} />}
-                            title="更新失败"
-                        >
-                            {UpdateState.ErrorMessage}
-                        </Alert>
-                    )}
-
-                    <Group>
-                        <Button
-                            variant="outline"
-                            leftSection={<IconRefresh size={16} />}
-                            onClick={HandleCheckUpdate}
-                            loading={isChecking}
-                            disabled={isDownloading}
-                        >
-                            检查更新
-                        </Button>
-
-                        {UpdateState?.IsUpdateAvailable === true && (
-                            <Button
-                                leftSection={<IconDownload size={16} />}
-                                onClick={HandleDownloadUpdate}
-                                loading={isDownloading}
-                            >
-                                下载更新
-                            </Button>
-                        )}
-
-                        {UpdateState?.IsUpdateDownloaded === true && (
-                            <Button
-                                color="green"
-                                leftSection={<IconRocket size={16} />}
-                                onClick={HandleInstallUpdate}
-                            >
-                                重启安装
-                            </Button>
-                        )}
-                    </Group>
-                </Stack>
-            </Paper>
-
-            <Paper shadow="sm" radius="md" p="lg" withBorder>
-                <Group gap="sm" mb="xs">
-                    <IconInfoCircle size={22} />
-                    <Title order={4}>关于</Title>
-                </Group>
-
-                <Stack gap={4}>
-                    <Group justify="space-between">
-                        <Text size="sm" c="dimmed">应用名称</Text>
-                        <Text size="sm" fw={500}>牛子小助手 (DickHelper)</Text>
-                    </Group>
-                    <Divider />
-                    <Group justify="space-between">
-                        <Text size="sm" c="dimmed">版本</Text>
-                        <Text size="sm" fw={500}>v{currentVersion}</Text>
-                    </Group>
-                    <Divider />
-                    <Button
-                        variant="light"
-                        color="yellow"
-                        fullWidth
-                        leftSection={<IconStar size={16} />}
-                        onClick={() => { void window.electronAPI.OpenExternal("https://github.com/zzzdajb/DickHelper"); }}
-                    >
-                        喜欢这个应用？去 GitHub 给项目点个 Star
-                    </Button>
-                </Stack>
-            </Paper>
         </Stack>
     );
 };
@@ -383,10 +171,38 @@ const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnline
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [showConfirmDisable, setShowConfirmDisable] = useState<boolean>(false);
+    const [serverUrl, setServerUrl] = useState<string>(onlineState.baseUrl);
+    const [serverUrlSaved, setServerUrlSaved] = useState<boolean>(false);
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        setServerUrl(onlineState.baseUrl);
+    }, [onlineState.baseUrl]);
+
+    useEffect(() => {
+        return () => {
+            if (savedTimerRef.current !== null) {
+                clearTimeout(savedTimerRef.current);
+            }
+        };
+    }, []);
 
     const MaskUUID = (uuid: string): string => {
         if (uuid.length <= 8) return uuid;
         return uuid.slice(0, 4) + "****" + uuid.slice(-4);
+    };
+
+    const HandleSaveServerUrl = (): void => {
+        // Save to localStorage via the existing config mechanism
+        const config = { ...onlineState, baseUrl: serverUrl };
+        localStorage.setItem("dickhelper_online_config", JSON.stringify(config));
+        setServerUrlSaved(true);
+        if (savedTimerRef.current !== null) {
+            clearTimeout(savedTimerRef.current);
+        }
+        savedTimerRef.current = setTimeout(() => {
+            setServerUrlSaved(false);
+        }, 2000);
     };
 
     const HandleToggle = async (enabled: boolean): Promise<void> => {
@@ -436,6 +252,36 @@ const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnline
             </Text>
 
             <Stack gap="sm">
+                {/* 服务器地址配置 */}
+                <Group justify="space-between" align="flex-end">
+                    <TextInput
+                        label="服务器地址"
+                        description="默认使用社区服务器，也可输入自建服务器地址"
+                        placeholder="https://your-worker.workers.dev"
+                        value={serverUrl}
+                        onChange={(e) => setServerUrl(e.currentTarget.value)}
+                        disabled={onlineState.enabled}
+                        style={{ flex: 1 }}
+                        leftSection={<IconServer size={16} />}
+                    />
+                    {!onlineState.enabled && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={HandleSaveServerUrl}
+                            mb={2}
+                        >
+                            保存
+                        </Button>
+                    )}
+                </Group>
+                {serverUrlSaved && (
+                    <Text size="xs" c="green">服务器地址已保存</Text>
+                )}
+
+                <Divider />
+
+                {/* 启用/禁用开关 */}
                 <Group justify="space-between" align="center">
                     <Text size="sm" c="dimmed">启用在线功能</Text>
                     <Switch
@@ -445,6 +291,7 @@ const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnline
                     />
                 </Group>
 
+                {/* 用户信息（启用后显示） */}
                 {onlineState.enabled && onlineState.nickname !== null && (
                     <>
                         <Divider />

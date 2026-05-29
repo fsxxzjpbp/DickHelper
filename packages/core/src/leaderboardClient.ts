@@ -69,7 +69,7 @@ export async function registerLeaderboard(
     const data = await apiFetch<IRegisterResponse>({
         method: "POST",
         baseUrl,
-        path: "/api/register",
+        path: "/api/v1/register",
         body: { uuid },
     });
     return { nickname: data.nickname };
@@ -86,7 +86,7 @@ export async function reportDailyStats(
     await apiFetch<{ success: boolean }>({
         method: "POST",
         baseUrl,
-        path: "/api/report",
+        path: "/api/v1/report",
         uuid,
         body: { date, count, duration },
     });
@@ -108,7 +108,7 @@ export async function getDailyRanking(
     return apiFetch<IRankingResponse>({
         method: "GET",
         baseUrl,
-        path: "/api/ranking/daily",
+        path: "/api/v1/ranking/daily",
         uuid,
         query,
     });
@@ -130,7 +130,7 @@ export async function getWeeklyRanking(
     return apiFetch<IRankingResponse>({
         method: "GET",
         baseUrl,
-        path: "/api/ranking/weekly",
+        path: "/api/v1/ranking/weekly",
         uuid,
         query,
     });
@@ -144,7 +144,7 @@ export async function deleteAccount(
     await apiFetch<{ success: boolean }>({
         method: "DELETE",
         baseUrl,
-        path: "/api/account",
+        path: "/api/v1/account",
         uuid,
     });
 }

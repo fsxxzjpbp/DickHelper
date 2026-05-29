@@ -23,6 +23,7 @@ import {
     IconDownload,
     IconBolt,
     IconCloud,
+    IconInfoCircle,
 } from "@tabler/icons-react";
 import "@mantine/core/styles.css";
 import { RecordForm } from "./views/RecordForm";
@@ -31,11 +32,12 @@ import { HistoryList } from "./views/HistoryList";
 import { Settings } from "./views/Settings";
 import { Prediction } from "./views/Prediction";
 import { OnlineView } from "./views/OnlineView";
+import { About } from "./views/About";
 import { useUpdateState } from "./hooks/useUpdateState";
 import { useOnlineService } from "./hooks/useOnlineService";
 import { UpdateService } from "./services/UpdateService";
 
-type View = "record" | "stats" | "history" | "prediction" | "settings" | "online";
+type View = "record" | "stats" | "history" | "prediction" | "settings" | "online" | "about";
 
 interface IErrorBoundaryProps { children: ReactNode; }
 interface IErrorBoundaryState { hasError: boolean; error: Error | null; }
@@ -246,6 +248,14 @@ export const App = () => {
                         variant="filled"
                         style={{ borderRadius: 8 }}
                     />
+                    <NavLink
+                        label="关于"
+                        leftSection={<IconInfoCircle size={20} />}
+                        active={activeView === "about"}
+                        onClick={() => setActiveView("about")}
+                        variant="filled"
+                        style={{ borderRadius: 8 }}
+                    />
                 </AppShell.Navbar>
 
                 <AppShell.Main>
@@ -267,6 +277,7 @@ export const App = () => {
                             onDisableOnline={disableOnline}
                         />
                     )}
+                    {activeView === "about" && <About />}
                 </AppShell.Main>
             </AppShell>
         </MantineProvider>

@@ -96,8 +96,8 @@ async function authenticateUser(c: Context<{ Bindings: Env }>): Promise<{ uuid: 
   return { uuid };
 }
 
-// POST /api/register
-app.post('/api/register', async (c) => {
+// POST /api/v1/register
+app.post('/api/v1/register', async (c) => {
   try {
     const body = await c.req.json<RegisterRequest>();
     const { uuid } = body;
@@ -126,8 +126,8 @@ app.post('/api/register', async (c) => {
   }
 });
 
-// POST /api/report
-app.post('/api/report', async (c) => {
+// POST /api/v1/report
+app.post('/api/v1/report', async (c) => {
   try {
     const auth = await authenticateUser(c);
     if ('error' in auth) {
@@ -165,8 +165,8 @@ app.post('/api/report', async (c) => {
   }
 });
 
-// GET /api/ranking/daily
-app.get('/api/ranking/daily', async (c) => {
+// GET /api/v1/ranking/daily
+app.get('/api/v1/ranking/daily', async (c) => {
   try {
     const auth = await authenticateUser(c);
     if ('error' in auth) {
@@ -252,8 +252,8 @@ app.get('/api/ranking/daily', async (c) => {
   }
 });
 
-// GET /api/ranking/weekly
-app.get('/api/ranking/weekly', async (c) => {
+// GET /api/v1/ranking/weekly
+app.get('/api/v1/ranking/weekly', async (c) => {
   try {
     const auth = await authenticateUser(c);
     if ('error' in auth) {
@@ -357,19 +357,19 @@ app.get('/api/ranking/weekly', async (c) => {
   }
 });
 
-// DELETE /api/account
-app.delete('/api/account', async (c) => {
+// DELETE /api/v1/account
+app.delete('/api/v1/account', async (c) => {
   try {
     const auth = await authenticateUser(c);
     if ('error' in auth) {
       return c.json<ErrorResponse>(auth, 401);
     }
 
-    // Delete user's daily stats first (foreign key constraint)
-    await c.env.DB.prepare('DELETE FROM daily_stats WHERE uuid = ?').bind(auth.uuid).run();
-
-    // Delete user
-    await c.env.DB.prepare('DELETE FROM users WHERE uuid = ?').bind(auth.uuid).run();
+    // Delete user and daily stats atomically using D1 batch
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM daily_stats WHERE uuid = ?').bind(auth.uuid),
+      c.env.DB.prepare('DELETE FROM users WHERE uuid = ?').bind(auth.uuid),
+    ]);
 
     return c.json<SuccessResponse>({ success: true });
   } catch (error) {
