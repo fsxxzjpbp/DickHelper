@@ -148,6 +148,7 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
     const me: IUserRanking | null = rankingData?.me ?? null;
     const rankings: readonly IRankingEntry[] = rankingData?.rankings ?? [];
     const total: number = rankingData?.total ?? 0;
+    const stats = rankingData?.stats ?? null;
     const hasMore: boolean = offset + PAGE_SIZE < total;
     const hasPrev: boolean = offset > 0;
     const periodLabel: string = GetPeriodLabel(period);
@@ -357,6 +358,24 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
                         <Group justify="space-between">
                             <Text size="sm" c="dimmed">百分位</Text>
                             <Text size="sm" fw={500}>超过 {me.percentile}% 的用户</Text>
+                        </Group>
+                    </Stack>
+                </Paper>
+            )}
+
+            {/* Server Stats */}
+            {stats !== null && total > 0 && (
+                <Paper shadow="sm" radius="md" p="md" withBorder>
+                    <Stack gap="xs">
+                        <Text size="sm" fw={600}>全服{periodLabel}平均值</Text>
+                        <Divider />
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">平均次数</Text>
+                            <Text size="sm" fw={500}>{stats.avgCount.toFixed(1)} 次</Text>
+                        </Group>
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">平均时长</Text>
+                            <Text size="sm" fw={500}>{stats.avgDuration.toFixed(1)} 分钟</Text>
                         </Group>
                     </Stack>
                 </Paper>
