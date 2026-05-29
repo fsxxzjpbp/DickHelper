@@ -92,6 +92,21 @@ export async function reportDailyStats(
     });
 }
 
+// Batch report multiple days of stats in a single request.
+export async function batchReportDailyStats(
+    baseUrl: string,
+    uuid: string,
+    stats: Array<{ date: string; count: number; duration: number }>
+): Promise<void> {
+    await apiFetch<{ success: boolean }>({
+        method: "POST",
+        baseUrl,
+        path: "/api/v1/report/batch",
+        uuid,
+        body: { stats },
+    });
+}
+
 // Fetch daily ranking. date: YYYY-MM-DD, limit/offset for pagination.
 export async function getDailyRanking(
     baseUrl: string,

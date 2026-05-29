@@ -5,7 +5,7 @@ import {
     getOnlineConfig,
     setOnlineConfig,
     registerLeaderboard,
-    reportDailyStats,
+    batchReportDailyStats,
     getDailyRanking,
     getWeeklyRanking,
     deleteAccount,
@@ -47,7 +47,7 @@ export function useOnlineService() {
         });
     }, []);
 
-    // Report all local stats to the server (full sync)
+    // Report all local stats to the server (full sync, single batch request)
     const reportStats = useCallback(async (): Promise<void> => {
         const config = getOnlineConfig();
         if (!config.enabled || config.uuid === null) return;
@@ -56,13 +56,13 @@ export function useOnlineService() {
             const records = await DatabaseService.GetRecords();
             const allStats = aggregateAllDailyStats(records);
 
-            for (const [date, { count, duration }] of allStats) {
-                await reportDailyStats(config.baseUrl, config.uuid, date, count, duration);
-            }
+            if (allStats.size === 0) return;
 
-            if (allStats.size > 0) {
-                console.log("[OnlineService] Stats reported:", allStats.size, "days");
-            }
+            const stats = Array.from(allStats.entries()).map(
+                ([date, { count, duration }]) => ({ date, count, duration })
+            );
+            await batchReportDailyStats(config.baseUrl, config.uuid, stats);
+            console.log("[OnlineService] Stats reported:", stats.length, "days");
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             console.warn("[OnlineService] Failed to report stats:", message);
@@ -107,12 +107,15 @@ export function useOnlineService() {
         }
         saveConfig(newState);
 
-        // Report all local stats (full sync)
+        // Report all local stats (full sync, single batch request)
         try {
             const records = await DatabaseService.GetRecords();
             const allStats = aggregateAllDailyStats(records);
-            for (const [date, { count, duration }] of allStats) {
-                await reportDailyStats(baseUrl, uuid, date, count, duration);
+            if (allStats.size > 0) {
+                const stats = Array.from(allStats.entries()).map(
+                    ([date, { count, duration }]) => ({ date, count, duration })
+                );
+                await batchReportDailyStats(baseUrl, uuid, stats);
             }
         } catch {
             // Non-fatal: stats will be reported on next timer tick

@@ -14,6 +14,7 @@ export { ExportRecordsToJson, GetRecordIdStatistics, ParseImportJson } from "./r
 export {
     registerLeaderboard,
     reportDailyStats,
+    batchReportDailyStats,
     getDailyRanking,
     getWeeklyRanking,
     deleteAccount,

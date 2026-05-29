@@ -16,6 +16,7 @@ export type {
     IRegisterRequest,
     IRegisterResponse,
     IReportRequest,
+    IBatchReportRequest,
     IRankingEntry,
     IUserRanking,
     IRankingStats,

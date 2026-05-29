@@ -15,6 +15,11 @@ export interface IReportRequest {
     readonly duration: number;
 }
 
+/** Request body for POST /api/report/batch */
+export interface IBatchReportRequest {
+    readonly stats: readonly IReportRequest[];
+}
+
 /** A single entry in the ranking list */
 export interface IRankingEntry {
     readonly rank: number;
