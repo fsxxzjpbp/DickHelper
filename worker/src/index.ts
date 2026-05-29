@@ -5,7 +5,6 @@ import { generateNickname } from './nicknames';
 import type {
   Env,
   RegisterRequest,
-  ReportRequest,
   BatchReportRequest,
   RankingResponse,
   RankingStats,
@@ -133,45 +132,6 @@ app.post('/api/v1/register', async (c) => {
     return c.json<{ nickname: string }>({ nickname }, 201);
   } catch (error) {
     console.error('Register error:', error);
-    return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
-  }
-});
-
-// POST /api/v1/report
-app.post('/api/v1/report', async (c) => {
-  try {
-    const auth = await authenticateUser(c);
-    if ('error' in auth) {
-      return c.json<ErrorResponse>(auth, 401);
-    }
-
-    const body = await c.req.json<ReportRequest>();
-    const { date, count, duration } = body;
-
-    // Validate date format
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return c.json<ErrorResponse>({ error: 'Invalid date format. Use YYYY-MM-DD' }, 400);
-    }
-
-    // Validate count and duration
-    if (typeof count !== 'number' || count < 0) {
-      return c.json<ErrorResponse>({ error: 'Invalid count' }, 400);
-    }
-    if (typeof duration !== 'number' || duration < 0) {
-      return c.json<ErrorResponse>({ error: 'Invalid duration' }, 400);
-    }
-
-    // UPSERT into daily_stats
-    await c.env.DB.prepare(`
-      INSERT INTO daily_stats (uuid, date, count, duration, updated_at)
-      VALUES (?, ?, ?, ?, datetime('now'))
-      ON CONFLICT (uuid, date)
-      DO UPDATE SET count = ?, duration = ?, updated_at = datetime('now')
-    `).bind(auth.uuid, date, count, duration, count, duration).run();
-
-    return c.json<SuccessResponse>({ success: true });
-  } catch (error) {
-    console.error('Report error:', error);
     return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
   }
 });

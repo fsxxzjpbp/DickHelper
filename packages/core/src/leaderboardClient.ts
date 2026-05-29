@@ -75,23 +75,6 @@ export async function registerLeaderboard(
     return { nickname: data.nickname };
 }
 
-// Report daily stats to the leaderboard. Throws on failure.
-export async function reportDailyStats(
-    baseUrl: string,
-    uuid: string,
-    date: string,
-    count: number,
-    duration: number
-): Promise<void> {
-    await apiFetch<{ success: boolean }>({
-        method: "POST",
-        baseUrl,
-        path: "/api/v1/report",
-        uuid,
-        body: { date, count, duration },
-    });
-}
-
 // Batch report multiple days of stats in a single request.
 export async function batchReportDailyStats(
     baseUrl: string,

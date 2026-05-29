@@ -119,27 +119,9 @@ curl -X DELETE http://localhost:8787/api/v1/account \
 { "nickname": "快乐的海豚" }
 ```
 
-### POST /api/v1/report
-
-上报每日统计数据。按 (uuid, date) UPSERT，幂等操作。
-
-**请求体：**
-```json
-{
-  "date": "2026-05-29",
-  "count": 3,
-  "duration": 45.5
-}
-```
-
-**响应：**
-```json
-{ "success": true }
-```
-
 ### POST /api/v1/report/batch
 
-批量上报多天统计数据。一次请求上报所有历史数据，按 (uuid, date) UPSERT，幂等操作。
+批量上报多天统计数据。一次请求上报所有历史数据，按 (uuid, date) UPSERT，幂等操作。传入单条记录即为单次上报。
 
 **请求体：**
 ```json
