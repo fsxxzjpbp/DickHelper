@@ -31,11 +31,18 @@ export interface IUserRanking {
     readonly percentile: number;
 }
 
+/** Server-side aggregate stats across all users */
+export interface IRankingStats {
+    readonly avgCount: number;
+    readonly avgDuration: number;
+}
+
 /** Response from GET /api/ranking/daily or GET /api/ranking/weekly */
 export interface IRankingResponse {
     readonly rankings: readonly IRankingEntry[];
     readonly total: number;
     readonly me: IUserRanking;
+    readonly stats: IRankingStats;
 }
 
 /** Response from DELETE /api/account or POST /api/report */

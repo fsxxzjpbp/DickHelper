@@ -18,6 +18,7 @@ export type {
     IReportRequest,
     IRankingEntry,
     IUserRanking,
+    IRankingStats,
     IRankingResponse,
     ISuccessResponse,
     IErrorResponse,

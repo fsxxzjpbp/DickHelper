@@ -98,12 +98,14 @@ export async function getDailyRanking(
     uuid: string,
     date?: string,
     limit?: number,
-    offset?: number
+    offset?: number,
+    sort?: "count" | "duration"
 ): Promise<IRankingResponse> {
     const query: Record<string, string> = {};
     if (date !== undefined) query.date = date;
     if (limit !== undefined) query.limit = String(limit);
     if (offset !== undefined) query.offset = String(offset);
+    if (sort !== undefined) query.sort = sort;
 
     return apiFetch<IRankingResponse>({
         method: "GET",
@@ -120,12 +122,14 @@ export async function getWeeklyRanking(
     uuid: string,
     week?: string,
     limit?: number,
-    offset?: number
+    offset?: number,
+    sort?: "count" | "duration"
 ): Promise<IRankingResponse> {
     const query: Record<string, string> = {};
     if (week !== undefined) query.week = week;
     if (limit !== undefined) query.limit = String(limit);
     if (offset !== undefined) query.offset = String(offset);
+    if (sort !== undefined) query.sort = sort;
 
     return apiFetch<IRankingResponse>({
         method: "GET",
