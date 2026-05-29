@@ -81,20 +81,16 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
                 let data: IRankingResponse;
                 if (period === "daily") {
                     const today = getDateInUTC8(new Date());
-                    console.log("[OnlineView] Fetching daily ranking:", { today, rankingType });
                     data = await fetchDailyRanking(today, PAGE_SIZE, newOffset, rankingType);
                 } else {
                     const week = getCurrentWeekUTC8();
-                    console.log("[OnlineView] Fetching weekly ranking:", { week, rankingType });
                     data = await fetchWeeklyRanking(week, PAGE_SIZE, newOffset, rankingType);
                 }
 
-                console.log("[OnlineView] Ranking response:", JSON.stringify(data));
                 setRankingData(data);
                 setOffset(newOffset);
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);
-                console.error("[OnlineView] Ranking fetch error:", message);
                 setError(message);
             } finally {
                 setLoading(false);
@@ -108,10 +104,8 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            console.log("[OnlineView] Initial mount — reporting stats first...");
             reportStats()
-                .then(() => console.log("[OnlineView] Report done, now fetching ranking..."))
-                .catch((err: unknown) => console.warn("[OnlineView] Report failed:", err))
+                .catch(() => { /* non-fatal */ })
                 .finally(() => {
                     void loadRanking(0);
                 });
