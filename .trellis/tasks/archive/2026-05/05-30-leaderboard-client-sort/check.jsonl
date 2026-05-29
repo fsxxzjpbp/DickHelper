@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify type definitions match backend response structure"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Verify code style consistency"}

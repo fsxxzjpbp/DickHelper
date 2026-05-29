@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript type definitions - readonly interfaces, proper naming conventions"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Code style - JSDoc comments, function signatures"}
