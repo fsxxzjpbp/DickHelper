@@ -245,7 +245,8 @@ app.get('/api/v1/ranking/daily', async (c) => {
       WHERE uuid = ? AND date = ?
     `).bind(auth.uuid, date).first();
 
-    let userRanking = { rank: 1, count: 0, duration: 0, percentile: 0 };
+    // Default: no data → rank 1 if nobody has data, otherwise last place
+    let userRanking = { rank: total > 0 ? total + 1 : 1, count: 0, duration: 0, percentile: 0 };
 
     if (userStat) {
       const userCount = userStat.count as number;
@@ -376,7 +377,8 @@ app.get('/api/v1/ranking/weekly', async (c) => {
       WHERE uuid = ? AND date >= ? AND date <= ?
     `).bind(auth.uuid, monday, sunday).first();
 
-    let userRanking = { rank: 1, count: 0, duration: 0, percentile: 0 };
+    // Default: no data → rank 1 if nobody has data, otherwise last place
+    let userRanking = { rank: total > 0 ? total + 1 : 1, count: 0, duration: 0, percentile: 0 };
 
     if (userStat && userStat.count) {
       const userCount = userStat.count as number;
