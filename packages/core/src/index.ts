@@ -13,6 +13,7 @@ export {
 export { ExportRecordsToJson, GetRecordIdStatistics, ParseImportJson } from "./recordImportExport";
 export {
     registerLeaderboard,
+    rerollNickname,
     batchReportDailyStats,
     getDailyRanking,
     getWeeklyRanking,

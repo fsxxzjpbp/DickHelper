@@ -75,6 +75,19 @@ export async function registerLeaderboard(
     return { nickname: data.nickname };
 }
 
+// Re-roll nickname — returns the new nickname.
+export async function rerollNickname(
+    baseUrl: string,
+    uuid: string
+): Promise<{ nickname: string }> {
+    return apiFetch<{ nickname: string }>({
+        method: "POST",
+        baseUrl,
+        path: "/api/v1/reroll-nickname",
+        uuid,
+    });
+}
+
 // Batch report multiple days of stats in a single request.
 export async function batchReportDailyStats(
     baseUrl: string,

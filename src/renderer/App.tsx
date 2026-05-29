@@ -106,6 +106,7 @@ export const App = () => {
         onlineState,
         enableOnline,
         disableOnline,
+        rerollNickname,
         reportStats,
         fetchDailyRanking,
         fetchWeeklyRanking,
@@ -268,6 +269,7 @@ export const App = () => {
                         <OnlineView
                             onlineState={onlineState}
                             reportStats={reportStats}
+                            rerollNickname={rerollNickname}
                             fetchDailyRanking={fetchDailyRanking}
                             fetchWeeklyRanking={fetchWeeklyRanking}
                         />

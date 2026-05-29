@@ -136,6 +136,24 @@ app.post('/api/v1/register', async (c) => {
   }
 });
 
+// POST /api/v1/reroll-nickname
+app.post('/api/v1/reroll-nickname', async (c) => {
+  try {
+    const auth = await authenticateUser(c);
+    if ('error' in auth) {
+      return c.json<ErrorResponse>(auth, 401);
+    }
+
+    const nickname = generateNickname();
+    await c.env.DB.prepare('UPDATE users SET nickname = ? WHERE uuid = ?').bind(nickname, auth.uuid).run();
+
+    return c.json<{ nickname: string }>({ nickname });
+  } catch (error) {
+    console.error('Reroll nickname error:', error);
+    return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
+  }
+});
+
 // POST /api/v1/report/batch
 app.post('/api/v1/report/batch', async (c) => {
   try {

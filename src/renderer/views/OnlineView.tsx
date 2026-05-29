@@ -29,6 +29,7 @@ import type { IOnlineState } from "../hooks/useOnlineService";
 interface IOnlineViewProps {
     readonly onlineState: IOnlineState;
     readonly reportStats: () => Promise<void>;
+    readonly rerollNickname: () => Promise<string>;
     readonly fetchDailyRanking: (date?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
     readonly fetchWeeklyRanking: (week?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
 }
@@ -50,13 +51,26 @@ function GetPeriodLabel(period: "daily" | "weekly"): string {
     return period === "daily" ? "今天" : "本周";
 }
 
-export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchWeeklyRanking }: IOnlineViewProps) => {
+export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDailyRanking, fetchWeeklyRanking }: IOnlineViewProps) => {
     const [rankingType, setRankingType] = useState<"count" | "duration">("count");
     const [period, setPeriod] = useState<"daily" | "weekly">("daily");
     const [rankingData, setRankingData] = useState<IRankingResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [offset, setOffset] = useState<number>(0);
+    const [rerolling, setRerolling] = useState<boolean>(false);
+
+    const handleReroll = useCallback(async (): Promise<void> => {
+        setRerolling(true);
+        try {
+            await rerollNickname();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(message);
+        } finally {
+            setRerolling(false);
+        }
+    }, [rerollNickname]);
 
     const loadRanking = useCallback(
         async (newOffset: number = 0): Promise<void> => {
@@ -161,9 +175,19 @@ export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchW
                             </Text>
                         </Stack>
                     </Group>
-                    <Badge variant="light" color="green">
-                        已连接
-                    </Badge>
+                    <Group gap="sm">
+                        <Button
+                            variant="subtle"
+                            size="xs"
+                            loading={rerolling}
+                            onClick={() => void handleReroll()}
+                        >
+                            换个昵称
+                        </Button>
+                        <Badge variant="light" color="green">
+                            已连接
+                        </Badge>
+                    </Group>
                 </Group>
             </Paper>
 

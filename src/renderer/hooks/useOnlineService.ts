@@ -5,6 +5,7 @@ import {
     getOnlineConfig,
     setOnlineConfig,
     registerLeaderboard,
+    rerollNickname,
     batchReportDailyStats,
     getDailyRanking,
     getWeeklyRanking,
@@ -153,6 +154,30 @@ export function useOnlineService() {
         saveConfig(newState);
     }, [saveConfig, stopTimer]);
 
+    // Re-roll nickname
+    const rerollNicknameAction = useCallback(async (): Promise<string> => {
+        const config = getOnlineConfig();
+        if (config.uuid === null) {
+            throw new Error("在线功能未启用");
+        }
+
+        const result = await rerollNickname(config.baseUrl, config.uuid);
+
+        const newState: IOnlineState = {
+            enabled: config.enabled,
+            uuid: config.uuid,
+            nickname: result.nickname,
+            baseUrl: config.baseUrl,
+        };
+
+        if (mountedRef.current) {
+            setOnlineState(newState);
+        }
+        saveConfig(newState);
+
+        return result.nickname;
+    }, [saveConfig]);
+
     // Fetch daily ranking
     const fetchDailyRanking = useCallback(
         async (date?: string, limit?: number, offset?: number, sort?: "count" | "duration"): Promise<IRankingResponse> => {
@@ -220,6 +245,7 @@ export function useOnlineService() {
         onlineState,
         enableOnline,
         disableOnline,
+        rerollNickname: rerollNicknameAction,
         reportStats,
         fetchDailyRanking,
         fetchWeeklyRanking,
