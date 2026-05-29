@@ -725,3 +725,38 @@ Code review of Cloudflare Workers+D1 leaderboard backend. Identified 12 issues, 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Ranking API: sort parameter and server-side stats
+
+**Date**: 2026-05-30
+**Task**: Ranking API: sort parameter and server-side stats
+**Branch**: `main`
+
+### Summary
+
+Added sort parameter (count/duration) to daily and weekly ranking endpoints. Added server-side avgCount/avgDuration stats. Updated client types and wired sort through UI layer.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d9e5c14` | (see git log) |
+| `52828fc` | (see git log) |
+| `cf0ce8e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
+- **Total Sessions**: 22
 - **Last Active**: 2026-05-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~727 | Active |
+| `journal-1.md` | ~762 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-05-30 | Ranking API: sort parameter and server-side stats | `d9e5c14`, `52828fc`, `cf0ce8e` | `main` |
 | 21 | 2026-05-30 | Review and fix Cloudflare Workers+D1 online features | `07e8c38` | `main` |
 | 20 | 2026-05-29 | feat(leaderboard): Cloudflare Worker + D1 排行榜系统 | `5088350`, `af0c073` | `main` |
 | 19 | 2026-05-28 | Fix P0 sync dedup + mobile seconds display | `1e135db`, `3a5a0d1`, `a05ac7d` | `main` |
