@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify code follows quality patterns - prepared statements, no SQL injection, proper types"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify error handling - validation, proper status codes, structured responses"}
