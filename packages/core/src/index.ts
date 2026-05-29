@@ -23,6 +23,7 @@ export {
     getCurrentWeekUTC8,
     getWeekDates,
     aggregateDailyStats,
+    aggregateAllDailyStats,
 } from "./leaderboardAggregation";
 export {
     generateUUID,

@@ -9,12 +9,11 @@ import {
     getDailyRanking,
     getWeeklyRanking,
     deleteAccount,
-    aggregateDailyStats,
-    getDateInUTC8,
+    aggregateAllDailyStats,
 } from "@dickhelper/core";
 import { DatabaseService } from "../services/DatabaseService";
 
-const REPORT_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const REPORT_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 export interface IOnlineState {
     readonly enabled: boolean;
@@ -48,19 +47,21 @@ export function useOnlineService() {
         });
     }, []);
 
-    // Report stats to the server
+    // Report all local stats to the server (full sync)
     const reportStats = useCallback(async (): Promise<void> => {
         const config = getOnlineConfig();
         if (!config.enabled || config.uuid === null) return;
 
         try {
             const records = await DatabaseService.GetRecords();
-            const today = getDateInUTC8(new Date());
-            const { count, duration } = aggregateDailyStats(records, today);
+            const allStats = aggregateAllDailyStats(records);
 
-            if (count > 0) {
-                await reportDailyStats(config.baseUrl, config.uuid, today, count, duration);
-                console.log("[OnlineService] Stats reported:", { date: today, count, duration });
+            for (const [date, { count, duration }] of allStats) {
+                await reportDailyStats(config.baseUrl, config.uuid, date, count, duration);
+            }
+
+            if (allStats.size > 0) {
+                console.log("[OnlineService] Stats reported:", allStats.size, "days");
             }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
@@ -106,13 +107,12 @@ export function useOnlineService() {
         }
         saveConfig(newState);
 
-        // Report initial stats
+        // Report all local stats (full sync)
         try {
             const records = await DatabaseService.GetRecords();
-            const today = getDateInUTC8(new Date());
-            const { count, duration } = aggregateDailyStats(records, today);
-            if (count > 0) {
-                await reportDailyStats(baseUrl, uuid, today, count, duration);
+            const allStats = aggregateAllDailyStats(records);
+            for (const [date, { count, duration }] of allStats) {
+                await reportDailyStats(baseUrl, uuid, date, count, duration);
             }
         } catch {
             // Non-fatal: stats will be reported on next timer tick

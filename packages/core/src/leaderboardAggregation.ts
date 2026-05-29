@@ -98,3 +98,21 @@ export function aggregateDailyStats(records: IRecord[], date: string): { count: 
 
     return { count, duration };
 }
+
+// Aggregate all records into daily stats grouped by UTC+8 date.
+export function aggregateAllDailyStats(records: IRecord[]): Map<string, { count: number; duration: number }> {
+    const grouped = new Map<string, { count: number; duration: number }>();
+
+    for (const record of records) {
+        const date = getDateInUTC8(record.EndTime);
+        const existing = grouped.get(date);
+        if (existing) {
+            existing.count++;
+            existing.duration += record.Duration;
+        } else {
+            grouped.set(date, { count: 1, duration: record.Duration });
+        }
+    }
+
+    return grouped;
+}
