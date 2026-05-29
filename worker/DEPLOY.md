@@ -76,26 +76,26 @@ npm run dev
 
 ```bash
 # 注册
-curl -X POST http://localhost:8787/api/register \
+curl -X POST http://localhost:8787/api/v1/register \
   -H "Content-Type: application/json" \
   -d '{"uuid": "test-uuid-123"}'
 
 # 上报数据
-curl -X POST http://localhost:8787/api/report \
+curl -X POST http://localhost:8787/api/v1/report \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer test-uuid-123" \
   -d '{"date": "2026-05-29", "count": 3, "duration": 45}'
 
 # 查询每日排行
-curl http://localhost:8787/api/ranking/daily \
+curl http://localhost:8787/api/v1/ranking/daily \
   -H "Authorization: Bearer test-uuid-123"
 
 # 查询每周排行
-curl http://localhost:8787/api/ranking/weekly \
+curl http://localhost:8787/api/v1/ranking/weekly \
   -H "Authorization: Bearer test-uuid-123"
 
 # 删除账号
-curl -X DELETE http://localhost:8787/api/account \
+curl -X DELETE http://localhost:8787/api/v1/account \
   -H "Authorization: Bearer test-uuid-123"
 ```
 
@@ -103,7 +103,7 @@ curl -X DELETE http://localhost:8787/api/account \
 
 所有需要认证的接口通过 `Authorization: Bearer <uuid>` 头传递身份凭证。
 
-### POST /api/register
+### POST /api/v1/register
 
 注册新用户。幂等操作，重复注册返回已有昵称。
 
@@ -117,7 +117,7 @@ curl -X DELETE http://localhost:8787/api/account \
 { "nickname": "快乐的海豚" }
 ```
 
-### POST /api/report
+### POST /api/v1/report
 
 上报每日统计数据。按 (uuid, date) UPSERT，幂等操作。
 
@@ -135,7 +135,7 @@ curl -X DELETE http://localhost:8787/api/account \
 { "success": true }
 ```
 
-### GET /api/ranking/daily
+### GET /api/v1/ranking/daily
 
 查询每日排行榜。
 
@@ -143,6 +143,7 @@ curl -X DELETE http://localhost:8787/api/account \
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | date | string | 今天(UTC+8) | 日期，格式 YYYY-MM-DD |
+| sort | string | count | 排序维度：`count`（按次数降序）或 `duration`（按时长降序） |
 | limit | number | 10 | 每页条数 |
 | offset | number | 0 | 偏移量 |
 
@@ -159,13 +160,21 @@ curl -X DELETE http://localhost:8787/api/account \
     "count": 3,
     "duration": 45.5,
     "percentile": 87
+  },
+  "stats": {
+    "avgCount": 3.45,
+    "avgDuration": 52.18
   }
 }
 ```
 
-`percentile` 表示你超过了百分之多少的用户。
+- `sort=count` 时排序规则：count DESC, duration ASC（tiebreaker）
+- `sort=duration` 时排序规则：duration DESC, count ASC（tiebreaker）
+- `me.percentile` 的含义跟随 `sort` 变化：`sort=count` 时为次数低于自己的用户占比，`sort=duration` 时为时长低于自己的用户占比
+- `stats` 始终返回 `avgCount` 和 `avgDuration`（与 `sort` 无关）
+- 无效的 `sort` 值返回 400 错误
 
-### GET /api/ranking/weekly
+### GET /api/v1/ranking/weekly
 
 查询每周排行榜。按周一到周日聚合。
 
@@ -173,12 +182,13 @@ curl -X DELETE http://localhost:8787/api/account \
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | week | string | 本周(UTC+8) | ISO周，格式 YYYY-Www (如 2026-W22) |
+| sort | string | count | 排序维度：`count`（按次数降序）或 `duration`（按时长降序） |
 | limit | number | 10 | 每页条数 |
 | offset | number | 0 | 偏移量 |
 
 **响应结构与 daily 相同。**
 
-### DELETE /api/account
+### DELETE /api/v1/account
 
 删除用户及其所有数据。
 

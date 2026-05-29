@@ -7,6 +7,7 @@ import type {
   RegisterRequest,
   ReportRequest,
   RankingResponse,
+  RankingStats,
   SuccessResponse,
   ErrorResponse,
 } from './types';
@@ -74,6 +75,15 @@ function getWeekDates(weekStr: string): { monday: string; sunday: string } {
   };
 
   return { monday: formatDate(monday), sunday: formatDate(sunday) };
+}
+
+// Valid sort values for ranking endpoints
+type SortField = 'count' | 'duration';
+
+function parseSortParam(sortStr: string | undefined): SortField | null {
+  if (!sortStr || sortStr === 'count') return 'count';
+  if (sortStr === 'duration') return 'duration';
+  return null;
 }
 
 // Helper: authenticate user from Authorization header
@@ -176,11 +186,22 @@ app.get('/api/v1/ranking/daily', async (c) => {
     const date = c.req.query('date') || getTodayUTC8();
     const limit = parseInt(c.req.query('limit') || '10');
     const offset = parseInt(c.req.query('offset') || '0');
+    const sort = parseSortParam(c.req.query('sort'));
 
     // Validate date format
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return c.json<ErrorResponse>({ error: 'Invalid date format. Use YYYY-MM-DD' }, 400);
     }
+
+    // Validate sort parameter
+    if (sort === null) {
+      return c.json<ErrorResponse>({ error: 'Invalid sort value. Use "count" or "duration"' }, 400);
+    }
+
+    // Dynamic ORDER BY — sort is validated to be exactly 'count' or 'duration' (safe from injection)
+    const orderClause = sort === 'count'
+      ? 'ds.count DESC, ds.duration ASC'
+      : 'ds.duration DESC, ds.count ASC';
 
     // Get total count for this date
     const totalResult = await c.env.DB.prepare(
@@ -194,9 +215,20 @@ app.get('/api/v1/ranking/daily', async (c) => {
       FROM daily_stats ds
       JOIN users u ON ds.uuid = u.uuid
       WHERE ds.date = ?
-      ORDER BY ds.count DESC, ds.duration ASC
+      ORDER BY ${orderClause}
       LIMIT ? OFFSET ?
     `).bind(date, limit, offset).all();
+
+    // Get server-side stats (always both, independent of sort)
+    const statsRow = await c.env.DB.prepare(`
+      SELECT AVG(count) as avgCount, AVG(duration) as avgDuration
+      FROM daily_stats
+      WHERE date = ?
+    `).bind(date).first();
+    const stats: RankingStats = {
+      avgCount: statsRow ? Math.round(((statsRow.avgCount as number) || 0) * 100) / 100 : 0,
+      avgDuration: statsRow ? Math.round(((statsRow.avgDuration as number) || 0) * 100) / 100 : 0,
+    };
 
     // Get current user's ranking
     const userStat = await c.env.DB.prepare(`
@@ -208,126 +240,33 @@ app.get('/api/v1/ranking/daily', async (c) => {
     let userRanking = { rank: 0, count: 0, duration: 0, percentile: 0 };
 
     if (userStat) {
-      // Calculate user's rank
-      const rankResult = await c.env.DB.prepare(`
-        SELECT COUNT(*) as rank
-        FROM daily_stats
-        WHERE date = ? AND (count > ? OR (count = ? AND duration < ?))
-      `).bind(date, userStat.count, userStat.count, userStat.duration).first();
-      const rank = ((rankResult?.rank as number) || 0) + 1;
-
-      // Calculate percentile (percentage of users with LOWER count)
-      const lowerCountResult = await c.env.DB.prepare(`
-        SELECT COUNT(*) as lower_count
-        FROM daily_stats
-        WHERE date = ? AND count < ?
-      `).bind(date, userStat.count).first();
-      const lowerCount = (lowerCountResult?.lower_count as number) || 0;
-      const percentile = total > 0 ? Math.round((lowerCount / total) * 100) : 0;
-
-      userRanking = {
-        rank,
-        count: userStat.count as number,
-        duration: userStat.duration as number,
-        percentile,
-      };
-    }
-
-    // Format rankings
-    const formattedRankings = rankings.results.map((row: Record<string, unknown>, index: number) => ({
-      rank: offset + index + 1,
-      nickname: row.nickname as string,
-      count: row.count as number,
-      duration: row.duration as number,
-    }));
-
-    return c.json<RankingResponse>({
-      rankings: formattedRankings,
-      total,
-      me: userRanking,
-    });
-  } catch (error) {
-    console.error('Daily ranking error:', error);
-    return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
-  }
-});
-
-// GET /api/v1/ranking/weekly
-app.get('/api/v1/ranking/weekly', async (c) => {
-  try {
-    const auth = await authenticateUser(c);
-    if ('error' in auth) {
-      return c.json<ErrorResponse>(auth, 401);
-    }
-
-    const week = c.req.query('week') || getCurrentWeekUTC8();
-    const limit = parseInt(c.req.query('limit') || '10');
-    const offset = parseInt(c.req.query('offset') || '0');
-
-    // Validate week format
-    if (!/^\d{4}-W\d{2}$/.test(week)) {
-      return c.json<ErrorResponse>({ error: 'Invalid week format. Use YYYY-Www' }, 400);
-    }
-
-    const { monday, sunday } = getWeekDates(week);
-
-    // Get total users who have stats for this week
-    const totalResult = await c.env.DB.prepare(`
-      SELECT COUNT(DISTINCT uuid) as total
-      FROM daily_stats
-      WHERE date >= ? AND date <= ?
-    `).bind(monday, sunday).first();
-    const total = (totalResult?.total as number) || 0;
-
-    // Get weekly rankings (sum of counts and durations)
-    const rankings = await c.env.DB.prepare(`
-      SELECT u.nickname, SUM(ds.count) as count, SUM(ds.duration) as duration
-      FROM daily_stats ds
-      JOIN users u ON ds.uuid = u.uuid
-      WHERE ds.date >= ? AND ds.date <= ?
-      GROUP BY ds.uuid
-      ORDER BY count DESC, duration ASC
-      LIMIT ? OFFSET ?
-    `).bind(monday, sunday, limit, offset).all();
-
-    // Get current user's weekly stats
-    const userStat = await c.env.DB.prepare(`
-      SELECT SUM(count) as count, SUM(duration) as duration
-      FROM daily_stats
-      WHERE uuid = ? AND date >= ? AND date <= ?
-    `).bind(auth.uuid, monday, sunday).first();
-
-    let userRanking = { rank: 0, count: 0, duration: 0, percentile: 0 };
-
-    if (userStat && userStat.count) {
       const userCount = userStat.count as number;
       const userDuration = userStat.duration as number;
 
-      // Calculate user's rank
+      // Calculate user's rank using the same sort order
+      const rankCondition = sort === 'count'
+        ? `(count > ? OR (count = ? AND duration < ?))`
+        : `(duration > ? OR (duration = ? AND count < ?))`;
       const rankResult = await c.env.DB.prepare(`
         SELECT COUNT(*) as rank
-        FROM (
-          SELECT uuid, SUM(count) as total_count, SUM(duration) as total_duration
-          FROM daily_stats
-          WHERE date >= ? AND date <= ?
-          GROUP BY uuid
-          HAVING total_count > ? OR (total_count = ? AND total_duration < ?)
-        )
-      `).bind(monday, sunday, userCount, userCount, userDuration).first();
+        FROM daily_stats
+        WHERE date = ? AND ${rankCondition}
+      `).bind(date,
+        sort === 'count' ? userCount : userDuration,
+        sort === 'count' ? userCount : userDuration,
+        sort === 'count' ? userDuration : userCount,
+      ).first();
       const rank = ((rankResult?.rank as number) || 0) + 1;
 
-      // Calculate percentile (percentage of users with LOWER count)
-      const lowerCountResult = await c.env.DB.prepare(`
+      // Calculate percentile based on sort field
+      const lowerCol = sort === 'count' ? 'count' : 'duration';
+      const lowerVal = sort === 'count' ? userCount : userDuration;
+      const lowerResult = await c.env.DB.prepare(`
         SELECT COUNT(*) as lower_count
-        FROM (
-          SELECT uuid, SUM(count) as total_count
-          FROM daily_stats
-          WHERE date >= ? AND date <= ?
-          GROUP BY uuid
-          HAVING total_count < ?
-        )
-      `).bind(monday, sunday, userCount).first();
-      const lowerCount = (lowerCountResult?.lower_count as number) || 0;
+        FROM daily_stats
+        WHERE date = ? AND ${lowerCol} < ?
+      `).bind(date, lowerVal).first();
+      const lowerCount = (lowerResult?.lower_count as number) || 0;
       const percentile = total > 0 ? Math.round((lowerCount / total) * 100) : 0;
 
       userRanking = {
@@ -350,6 +289,148 @@ app.get('/api/v1/ranking/weekly', async (c) => {
       rankings: formattedRankings,
       total,
       me: userRanking,
+      stats,
+    });
+  } catch (error) {
+    console.error('Daily ranking error:', error);
+    return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
+  }
+});
+
+// GET /api/v1/ranking/weekly
+app.get('/api/v1/ranking/weekly', async (c) => {
+  try {
+    const auth = await authenticateUser(c);
+    if ('error' in auth) {
+      return c.json<ErrorResponse>(auth, 401);
+    }
+
+    const week = c.req.query('week') || getCurrentWeekUTC8();
+    const limit = parseInt(c.req.query('limit') || '10');
+    const offset = parseInt(c.req.query('offset') || '0');
+    const sort = parseSortParam(c.req.query('sort'));
+
+    // Validate week format
+    if (!/^\d{4}-W\d{2}$/.test(week)) {
+      return c.json<ErrorResponse>({ error: 'Invalid week format. Use YYYY-Www' }, 400);
+    }
+
+    // Validate sort parameter
+    if (sort === null) {
+      return c.json<ErrorResponse>({ error: 'Invalid sort value. Use "count" or "duration"' }, 400);
+    }
+
+    const { monday, sunday } = getWeekDates(week);
+
+    // Dynamic ORDER BY — sort is validated to be exactly 'count' or 'duration' (safe from injection)
+    const orderClause = sort === 'count'
+      ? 'count DESC, duration ASC'
+      : 'duration DESC, count ASC';
+
+    // Get total users who have stats for this week
+    const totalResult = await c.env.DB.prepare(`
+      SELECT COUNT(DISTINCT uuid) as total
+      FROM daily_stats
+      WHERE date >= ? AND date <= ?
+    `).bind(monday, sunday).first();
+    const total = (totalResult?.total as number) || 0;
+
+    // Get weekly rankings (sum of counts and durations)
+    const rankings = await c.env.DB.prepare(`
+      SELECT u.nickname, SUM(ds.count) as count, SUM(ds.duration) as duration
+      FROM daily_stats ds
+      JOIN users u ON ds.uuid = u.uuid
+      WHERE ds.date >= ? AND ds.date <= ?
+      GROUP BY ds.uuid
+      ORDER BY ${orderClause}
+      LIMIT ? OFFSET ?
+    `).bind(monday, sunday, limit, offset).all();
+
+    // Get server-side stats (always both, independent of sort)
+    const statsRow = await c.env.DB.prepare(`
+      SELECT AVG(count) as avgCount, AVG(duration) as avgDuration
+      FROM (
+        SELECT uuid, SUM(count) as count, SUM(duration) as duration
+        FROM daily_stats
+        WHERE date >= ? AND date <= ?
+        GROUP BY uuid
+      )
+    `).bind(monday, sunday).first();
+    const stats: RankingStats = {
+      avgCount: statsRow ? Math.round(((statsRow.avgCount as number) || 0) * 100) / 100 : 0,
+      avgDuration: statsRow ? Math.round(((statsRow.avgDuration as number) || 0) * 100) / 100 : 0,
+    };
+
+    // Get current user's weekly stats
+    const userStat = await c.env.DB.prepare(`
+      SELECT SUM(count) as count, SUM(duration) as duration
+      FROM daily_stats
+      WHERE uuid = ? AND date >= ? AND date <= ?
+    `).bind(auth.uuid, monday, sunday).first();
+
+    let userRanking = { rank: 0, count: 0, duration: 0, percentile: 0 };
+
+    if (userStat && userStat.count) {
+      const userCount = userStat.count as number;
+      const userDuration = userStat.duration as number;
+
+      // Calculate user's rank using the same sort order
+      const rankHaving = sort === 'count'
+        ? `HAVING total_count > ? OR (total_count = ? AND total_duration < ?)`
+        : `HAVING total_duration > ? OR (total_duration = ? AND total_count < ?)`;
+      const rankResult = await c.env.DB.prepare(`
+        SELECT COUNT(*) as rank
+        FROM (
+          SELECT uuid, SUM(count) as total_count, SUM(duration) as total_duration
+          FROM daily_stats
+          WHERE date >= ? AND date <= ?
+          GROUP BY uuid
+          ${rankHaving}
+        )
+      `).bind(monday, sunday,
+        sort === 'count' ? userCount : userDuration,
+        sort === 'count' ? userCount : userDuration,
+        sort === 'count' ? userDuration : userCount,
+      ).first();
+      const rank = ((rankResult?.rank as number) || 0) + 1;
+
+      // Calculate percentile based on sort field
+      const lowerSumCol = sort === 'count' ? 'total_count' : 'total_duration';
+      const lowerVal = sort === 'count' ? userCount : userDuration;
+      const lowerResult = await c.env.DB.prepare(`
+        SELECT COUNT(*) as lower_count
+        FROM (
+          SELECT uuid, SUM(count) as total_count, SUM(duration) as total_duration
+          FROM daily_stats
+          WHERE date >= ? AND date <= ?
+          GROUP BY uuid
+          HAVING ${lowerSumCol} < ?
+        )
+      `).bind(monday, sunday, lowerVal).first();
+      const lowerCount = (lowerResult?.lower_count as number) || 0;
+      const percentile = total > 0 ? Math.round((lowerCount / total) * 100) : 0;
+
+      userRanking = {
+        rank,
+        count: userCount,
+        duration: userDuration,
+        percentile,
+      };
+    }
+
+    // Format rankings
+    const formattedRankings = rankings.results.map((row: Record<string, unknown>, index: number) => ({
+      rank: offset + index + 1,
+      nickname: row.nickname as string,
+      count: row.count as number,
+      duration: row.duration as number,
+    }));
+
+    return c.json<RankingResponse>({
+      rankings: formattedRankings,
+      total,
+      me: userRanking,
+      stats,
     });
   } catch (error) {
     console.error('Weekly ranking error:', error);

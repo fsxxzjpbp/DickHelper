@@ -44,10 +44,16 @@ export interface UserRanking {
   percentile: number;
 }
 
+export interface RankingStats {
+  avgCount: number;
+  avgDuration: number;
+}
+
 export interface RankingResponse {
   rankings: RankingEntry[];
   total: number;
   me: UserRanking;
+  stats: RankingStats;
 }
 
 export interface SuccessResponse {
