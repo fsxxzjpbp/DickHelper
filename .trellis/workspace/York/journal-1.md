@@ -692,3 +692,36 @@ Fixed P0 desktop-mobile sync dedup bug: ImportMobileRecords was discarding incom
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: Review and fix Cloudflare Workers+D1 online features
+
+**Date**: 2026-05-30
+**Task**: Review and fix Cloudflare Workers+D1 online features
+**Branch**: `main`
+
+### Summary
+
+Code review of Cloudflare Workers+D1 leaderboard backend. Identified 12 issues, reassessed based on project context (sensitive app, anonymous design, Cloudflare infrastructure). Fixed C2 (server URL config UI), M1 (API versioning /api/v1/), M3 (D1 batch for atomic deletion). Split Settings page: created About page for update/about sections.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `07e8c38` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
