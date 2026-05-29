@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
     Alert,
     Badge,
@@ -28,6 +28,7 @@ import type { IOnlineState } from "../hooks/useOnlineService";
 
 interface IOnlineViewProps {
     readonly onlineState: IOnlineState;
+    readonly reportStats: () => Promise<void>;
     readonly fetchDailyRanking: (date?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
     readonly fetchWeeklyRanking: (week?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
 }
@@ -49,7 +50,7 @@ function GetPeriodLabel(period: "daily" | "weekly"): string {
     return period === "daily" ? "今天" : "本周";
 }
 
-export const OnlineView = ({ onlineState, fetchDailyRanking, fetchWeeklyRanking }: IOnlineViewProps) => {
+export const OnlineView = ({ onlineState, reportStats, fetchDailyRanking, fetchWeeklyRanking }: IOnlineViewProps) => {
     const [rankingType, setRankingType] = useState<"count" | "duration">("count");
     const [period, setPeriod] = useState<"daily" | "weekly">("daily");
     const [rankingData, setRankingData] = useState<IRankingResponse | null>(null);
@@ -84,10 +85,18 @@ export const OnlineView = ({ onlineState, fetchDailyRanking, fetchWeeklyRanking 
         [period, rankingType, fetchDailyRanking, fetchWeeklyRanking]
     );
 
-    // Load ranking on mount and when period changes
+    // On mount: report stats first, then load ranking
+    const isInitialMount = useRef(true);
     useEffect(() => {
-        void loadRanking(0);
-    }, [loadRanking]);
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            reportStats().finally(() => {
+                void loadRanking(0);
+            });
+        } else {
+            void loadRanking(0);
+        }
+    }, [loadRanking, reportStats]);
 
     const handleRefresh = (): void => {
         void loadRanking(0);

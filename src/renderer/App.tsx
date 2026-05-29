@@ -106,6 +106,7 @@ export const App = () => {
         onlineState,
         enableOnline,
         disableOnline,
+        reportStats,
         fetchDailyRanking,
         fetchWeeklyRanking,
     } = useOnlineService();
@@ -266,6 +267,7 @@ export const App = () => {
                     {activeView === "online" && (
                         <OnlineView
                             onlineState={onlineState}
+                            reportStats={reportStats}
                             fetchDailyRanking={fetchDailyRanking}
                             fetchWeeklyRanking={fetchWeeklyRanking}
                         />
