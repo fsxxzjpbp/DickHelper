@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+    ActionIcon,
     Alert,
     Badge,
     Button,
@@ -14,10 +15,12 @@ import {
     Text,
     TextInput,
     Title,
+    Tooltip,
 } from "@mantine/core";
 import {
     IconAlertCircle,
     IconBrain,
+    IconCopy,
     IconDatabase,
     IconUpload,
     IconDownload,
@@ -173,7 +176,19 @@ const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnline
     const [showConfirmDisable, setShowConfirmDisable] = useState<boolean>(false);
     const [serverUrl, setServerUrl] = useState<string>(onlineState.baseUrl);
     const [serverUrlSaved, setServerUrlSaved] = useState<boolean>(false);
+    const [uuidCopied, setUuidCopied] = useState<boolean>(false);
     const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const HandleCopyUUID = async (): Promise<void> => {
+        if (onlineState.uuid === null) return;
+        try {
+            await navigator.clipboard.writeText(onlineState.uuid);
+            setUuidCopied(true);
+            setTimeout(() => setUuidCopied(false), 2000);
+        } catch {
+            // clipboard write may fail in some environments
+        }
+    };
 
     useEffect(() => {
         setServerUrl(onlineState.baseUrl);
@@ -186,11 +201,6 @@ const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnline
             }
         };
     }, []);
-
-    const MaskUUID = (uuid: string): string => {
-        if (uuid.length <= 8) return uuid;
-        return uuid.slice(0, 4) + "****" + uuid.slice(-4);
-    };
 
     const HandleSaveServerUrl = (): void => {
         // Save to localStorage via the existing config mechanism
@@ -300,12 +310,29 @@ const OnlineSection = ({ onlineState, onEnableOnline, onDisableOnline }: IOnline
                             <Text size="sm" fw={500}>{onlineState.nickname}</Text>
                         </Group>
                         {onlineState.uuid !== null && (
-                            <Group justify="space-between">
-                                <Text size="sm" c="dimmed">UUID</Text>
-                                <Text size="sm" fw={500} ff="monospace">
-                                    {MaskUUID(onlineState.uuid)}
+                            <>
+                                <Group justify="space-between">
+                                    <Text size="sm" c="dimmed">UUID</Text>
+                                    <Group gap={4} align="center">
+                                        <Text size="sm" fw={500} ff="monospace">
+                                            {onlineState.uuid}
+                                        </Text>
+                                        <Tooltip label={uuidCopied ? "已复制!" : "复制 UUID"}>
+                                            <ActionIcon
+                                                variant="subtle"
+                                                size="sm"
+                                                color={uuidCopied ? "teal" : "gray"}
+                                                onClick={() => void HandleCopyUUID()}
+                                            >
+                                                <IconCopy size={14} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    </Group>
+                                </Group>
+                                <Text size="xs" c="dimmed" fs="italic">
+                                    UUID 是你的登录凭证，请勿泄露给他人
                                 </Text>
-                            </Group>
+                            </>
                         )}
                     </>
                 )}

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
+    ActionIcon,
     Alert,
     Badge,
     Button,
@@ -13,10 +14,12 @@ import {
     Tabs,
     Text,
     Title,
+    Tooltip,
 } from "@mantine/core";
 import {
     IconAlertCircle,
     IconClock,
+    IconCopy,
     IconHash,
     IconRefresh,
     IconTrophy,
@@ -40,11 +43,6 @@ const RANKING_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 const PAGE_SIZE = 10;
 
-function MaskUUID(uuid: string): string {
-    if (uuid.length <= 8) return uuid;
-    return uuid.slice(0, 4) + "****" + uuid.slice(-4);
-}
-
 function FormatPercentileText(percentile: number, period: string): string {
     if (percentile <= 0) return `你${period}暂无数据`;
     if (percentile >= 100) return `你${period}超过了所有人`;
@@ -63,6 +61,18 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
     const [error, setError] = useState<string | null>(null);
     const [offset, setOffset] = useState<number>(0);
     const [rerolling, setRerolling] = useState<boolean>(false);
+    const [uuidCopied, setUuidCopied] = useState<boolean>(false);
+
+    const handleCopyUUID = useCallback(async (): Promise<void> => {
+        if (onlineState.uuid === null) return;
+        try {
+            await navigator.clipboard.writeText(onlineState.uuid);
+            setUuidCopied(true);
+            setTimeout(() => setUuidCopied(false), 2000);
+        } catch {
+            // clipboard write may fail in some environments
+        }
+    }, [onlineState.uuid]);
 
     // Ranking cache: key = "period-rankingType-offset-dateOrWeek"
     const rankingCacheRef = useRef<Map<string, { data: IRankingResponse; timestamp: number }>>(new Map());
@@ -193,9 +203,31 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
                             <Text size="sm" fw={500}>
                                 {onlineState.nickname ?? "未知用户"}
                             </Text>
-                            <Text size="xs" c="dimmed">
-                                UUID: {onlineState.uuid !== null ? MaskUUID(onlineState.uuid) : "N/A"}
-                            </Text>
+                            {onlineState.uuid !== null && (
+                                <>
+                                    <Group gap={4} align="center">
+                                        <Text size="xs" c="dimmed" ff="monospace">
+                                            {onlineState.uuid}
+                                        </Text>
+                                        <Tooltip label={uuidCopied ? "已复制!" : "复制 UUID"}>
+                                            <ActionIcon
+                                                variant="subtle"
+                                                size="xs"
+                                                color={uuidCopied ? "teal" : "gray"}
+                                                onClick={() => void handleCopyUUID()}
+                                            >
+                                                <IconCopy size={12} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    </Group>
+                                    <Text size="10" c="dimmed" fs="italic">
+                                        UUID 是你的登录凭证，请勿泄露给他人
+                                    </Text>
+                                </>
+                            )}
+                            {onlineState.uuid === null && (
+                                <Text size="xs" c="dimmed">UUID: N/A</Text>
+                            )}
                         </Stack>
                     </Group>
                     <Group gap="sm">
