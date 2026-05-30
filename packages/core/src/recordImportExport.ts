@@ -18,6 +18,8 @@ interface ICanonicalRecordInput {
     readonly EndTime: unknown;
     readonly Duration: unknown;
     readonly Notes?: unknown;
+    readonly Deleted?: unknown;
+    readonly DeletedAt?: unknown;
 }
 
 export function ExportRecordsToJson(records: readonly IRecordRaw[]): string {
@@ -29,6 +31,8 @@ export function ExportRecordsToJson(records: readonly IRecordRaw[]): string {
             EndTime: record.EndTime,
             Duration: record.Duration,
             Notes: record.Notes ?? undefined,
+            Deleted: record.Deleted,
+            DeletedAt: record.DeletedAt ?? undefined,
         })),
     };
 
@@ -159,21 +163,20 @@ function NormalizeCanonicalRecord(rawRecord: unknown): IRecordRaw | null {
     }
 
     const notes = NormalizeNotes(candidate.Notes);
+    const deleted = NormalizeDeleted(candidate.Deleted);
+    const deletedAt = NormalizeDeletedAt(candidate.DeletedAt);
 
-    return notes === undefined
-        ? {
-              Id: id,
-              StartTime: startTime.toISOString(),
-              EndTime: endTime.toISOString(),
-              Duration: duration,
-          }
-        : {
-              Id: id,
-              StartTime: startTime.toISOString(),
-              EndTime: endTime.toISOString(),
-              Duration: duration,
-              Notes: notes,
-          };
+    const result: IRecordRaw = {
+        Id: id,
+        StartTime: startTime.toISOString(),
+        EndTime: endTime.toISOString(),
+        Duration: duration,
+        ...(notes !== undefined ? { Notes: notes } : {}),
+        ...(deleted !== undefined ? { Deleted: deleted } : {}),
+        ...(deletedAt !== undefined ? { DeletedAt: deletedAt } : {}),
+    };
+
+    return result;
 }
 
 function NormalizeLegacyRecord(rawRecord: unknown): IRecordRaw | null {
@@ -240,4 +243,33 @@ function NormalizeNotes(value: unknown): string | undefined {
     }
 
     return typeof value === "string" ? value : String(value);
+}
+
+function NormalizeDeleted(value: unknown): number | undefined {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
+    if (typeof value === "number") {
+        return value === 1 ? 1 : 0;
+    }
+
+    if (typeof value === "boolean") {
+        return value ? 1 : 0;
+    }
+
+    return undefined;
+}
+
+function NormalizeDeletedAt(value: unknown): string | undefined {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
+    if (typeof value === "string") {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? undefined : value;
+    }
+
+    return undefined;
 }

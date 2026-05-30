@@ -15,6 +15,7 @@ export type { ISyncResponse, ISyncStatus } from "./ISync";
 export type {
     IRegisterRequest,
     IRegisterResponse,
+    IReportRecordDetail,
     IReportRequest,
     IBatchReportRequest,
     IRankingEntry,

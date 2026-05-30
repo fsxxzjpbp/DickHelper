@@ -36,6 +36,7 @@ export function getOnlineConfig(): IOnlineConfig {
         uuid: null,
         nickname: null,
         baseUrl: DEFAULT_BASE_URL,
+        deviceId: null,
     };
 }
 
@@ -54,6 +55,7 @@ function IsOnlineConfig(value: unknown): value is IOnlineConfig {
         typeof obj.enabled === "boolean" &&
         (obj.uuid === null || typeof obj.uuid === "string") &&
         (obj.nickname === null || typeof obj.nickname === "string") &&
-        typeof obj.baseUrl === "string"
+        typeof obj.baseUrl === "string" &&
+        (obj.deviceId === undefined || obj.deviceId === null || typeof obj.deviceId === "string")
     );
 }

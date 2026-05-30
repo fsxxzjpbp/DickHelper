@@ -8,15 +8,23 @@ export interface IRegisterResponse {
     readonly nickname: string;
 }
 
+/** A single record detail in the report */
+export interface IReportRecordDetail {
+    readonly id: string;
+    readonly duration: number;
+}
+
 /** Request body for POST /api/report */
 export interface IReportRequest {
     readonly date: string;
     readonly count: number;
     readonly duration: number;
+    readonly records?: readonly IReportRecordDetail[];
 }
 
 /** Request body for POST /api/report/batch */
 export interface IBatchReportRequest {
+    readonly device_id: string;
     readonly stats: readonly IReportRequest[];
 }
 
@@ -66,4 +74,5 @@ export interface IOnlineConfig {
     readonly uuid: string | null;
     readonly nickname: string | null;
     readonly baseUrl: string;
+    readonly deviceId: string | null;
 }

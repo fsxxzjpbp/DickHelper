@@ -1,5 +1,16 @@
 import type { IRecord } from "@dickhelper/shared";
 
+export interface IDailyRecordDetail {
+    readonly id: string;
+    readonly duration: number;
+}
+
+export interface IDailyStatsWithRecords {
+    readonly count: number;
+    readonly duration: number;
+    readonly records: IDailyRecordDetail[];
+}
+
 // Get date string in UTC+8 (YYYY-MM-DD).
 export function getDateInUTC8(date: Date): string {
     const utc8 = new Date(date.getTime() + 8 * 60 * 60 * 1000);
@@ -89,6 +100,7 @@ export function aggregateDailyStats(records: IRecord[], date: string): { count: 
     let duration = 0;
 
     for (const record of records) {
+        if (record.Deleted === true) continue;
         const recordDate = getDateInUTC8(record.EndTime);
         if (recordDate === date) {
             count++;
@@ -100,10 +112,12 @@ export function aggregateDailyStats(records: IRecord[], date: string): { count: 
 }
 
 // Aggregate all records into daily stats grouped by UTC+8 date.
+// Excludes soft-deleted records (Deleted=true).
 export function aggregateAllDailyStats(records: IRecord[]): Map<string, { count: number; duration: number }> {
     const grouped = new Map<string, { count: number; duration: number }>();
 
     for (const record of records) {
+        if (record.Deleted === true) continue;
         const date = getDateInUTC8(record.EndTime);
         const existing = grouped.get(date);
         if (existing) {
@@ -111,6 +125,33 @@ export function aggregateAllDailyStats(records: IRecord[]): Map<string, { count:
             existing.duration += record.Duration;
         } else {
             grouped.set(date, { count: 1, duration: record.Duration });
+        }
+    }
+
+    return grouped;
+}
+
+// Aggregate all records into daily stats with per-record details (for leaderboard reporting).
+// Excludes soft-deleted records (Deleted=true).
+export function aggregateAllDailyStatsWithRecords(records: IRecord[]): Map<string, IDailyStatsWithRecords> {
+    const grouped = new Map<string, IDailyStatsWithRecords>();
+
+    for (const record of records) {
+        if (record.Deleted === true) continue;
+        const date = getDateInUTC8(record.EndTime);
+        const existing = grouped.get(date);
+        if (existing) {
+            grouped.set(date, {
+                count: existing.count + 1,
+                duration: existing.duration + record.Duration,
+                records: [...existing.records, { id: record.Id, duration: record.Duration }],
+            });
+        } else {
+            grouped.set(date, {
+                count: 1,
+                duration: record.Duration,
+                records: [{ id: record.Id, duration: record.Duration }],
+            });
         }
     }
 

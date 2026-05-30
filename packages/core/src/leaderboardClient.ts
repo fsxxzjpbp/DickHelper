@@ -2,6 +2,7 @@ import type {
     IRegisterResponse,
     IRankingResponse,
     IErrorResponse,
+    IReportRecordDetail,
 } from "@dickhelper/shared";
 
 // Leaderboard API client — all functions throw descriptive errors on failure.
@@ -92,14 +93,15 @@ export async function rerollNickname(
 export async function batchReportDailyStats(
     baseUrl: string,
     uuid: string,
-    stats: Array<{ date: string; count: number; duration: number }>
+    deviceId: string,
+    stats: Array<{ date: string; count: number; duration: number; records?: readonly IReportRecordDetail[] }>
 ): Promise<void> {
     await apiFetch<{ success: boolean }>({
         method: "POST",
         baseUrl,
         path: "/api/v1/report/batch",
         uuid,
-        body: { stats },
+        body: { device_id: deviceId, stats },
     });
 }
 

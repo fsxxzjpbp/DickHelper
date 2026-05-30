@@ -6,6 +6,8 @@ export {
     RECORD_END_TIME_COLUMN_NAME,
     RECORD_DURATION_COLUMN_NAME,
     RECORD_NOTES_COLUMN_NAME,
+    RECORD_DELETED_COLUMN_NAME,
+    RECORD_DELETED_AT_COLUMN_NAME,
     SETTINGS_TABLE_NAME,
     SETTINGS_KEY_COLUMN_NAME,
     SETTINGS_VALUE_COLUMN_NAME,
@@ -25,7 +27,9 @@ export {
     getWeekDates,
     aggregateDailyStats,
     aggregateAllDailyStats,
+    aggregateAllDailyStatsWithRecords,
 } from "./leaderboardAggregation";
+export type { IDailyRecordDetail, IDailyStatsWithRecords } from "./leaderboardAggregation";
 export {
     generateUUID,
     getOnlineConfig,
