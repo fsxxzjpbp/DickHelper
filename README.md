@@ -7,33 +7,37 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![Mantine](https://img.shields.io/badge/Mantine-7-339AF0.svg)](https://mantine.dev/)
 
-一个简单、高效、易用的打飞机记录工具。
+一个简单、高效、**支持全平台使用**的打飞机记录工具。。
 
 An easy-to-use masturbation management recording tool.
 
-<img width="944" height="615" alt="image" src="https://github.com/user-attachments/assets/124fe82c-088e-4b3f-995e-321a693aaf3f" />
+<img width="944" height="671" alt="image" src="https://github.com/user-attachments/assets/4706c1a7-77a2-4ccf-a902-936dd5a616e4" />
 
 没有什么人活跃的QQ交流群：745297798 
 
-该群为作者私人群，仅供作者产出奇怪的开源作品使用
+该群为作者私人群，仅供作者产出奇怪的开源作品使用。
+
+---
+## 移动端MVP开发完成
+
+牛子小助手安卓版本现已上线，功能基本开发完毕，但是由于目前项目是**桌面优先**的策略，移动端在部分功能上可能**有所落后**，还请谅解。
+
+下载地址：https://github.com/zzzdajb/DickHelper/releases/tag/mobile-v0.0.2
+
+移动端现已支持LAN同步功能，您可以在任意设备上自由的记录您的体验，无需担心数据合并问题。
 
 ---
 
-## v2 重构完成 | v2 Rewrite Complete
+## 天梯排行榜
 
-DickHelper v2 已从旧版 Web 应用重写为 **Electron 桌面应用**。使用更现代的技术栈，修复了旧版数据模型的 bug，体验更流畅。
+和全球所有牛子小助手的用户进行时长和次数比拼吧！
 
-- **数据迁移**: v2 支持从旧版导出的 JSON 文件导入数据（自动识别旧格式并映射字段，按 UUID 去重）
+该项目部署于Cloudflare Workers，受限于免费服务质量，可能存在不稳定的情况，还请谅解。
 
-DickHelper v2 has been completely rewritten as an **Electron desktop app** with a modern tech stack, fixed data model, and smoother experience.
-
-- **Data Migration**: v2 supports importing JSON files exported from the legacy version (auto-detects old format, maps fields, deduplicates by UUID)
-
----
 
 ## 特点 | Features
 
-- 🔒 **数据本地存储**: SQLite 数据库，数据完全在本地，无需担心隐私泄露 | **Local Storage**: SQLite database, all data stored locally
+- 🔒 **数据本地存储**: SQLite 数据库，本地存储，无需担心隐私泄露 | **Local Storage**: SQLite database, all data stored locally
 - 📊 **统计看板**: 总次数、平均时长、周/月频率统计 + 发射日历热力图 | **Statistics**: Total count, avg duration, weekly/monthly frequency + heatmap calendar
 - ⏱️ **计时器**: 开始/暂停/继续/停止，精确记录每次时长 | **Timer**: Start/pause/resume/stop with precise duration tracking
 - 📋 **历史记录**: 浏览、搜索、删除单条或清空全部 | **History**: Browse, delete individual records or clear all
@@ -116,11 +120,11 @@ Release workflow 会校验：
 
 ## 隐私说明 | Privacy Statement
 
-所有数据存储在本地 SQLite 数据库中，不会上传到任何服务器。未经您允许，我们不会收集您的任何信息。
+所有数据存储在本地 SQLite 数据库中，当您使用本地功能的时候，不会有任何数据上传到任何服务器。未经您允许，我们不会收集您的任何敏感信息——在未来我们可能会收集您的活跃记录以用于软件开发，但是活跃记录仅包含您是否打开软件，而不会包含其他敏感信息。所有信息上报逻辑全部开源于代码当中，如果您对此感到担忧，欢迎您自行审查代码。
 
 All data is stored in a local SQLite database and is never uploaded to any server. We do not collect any of your information without your permission.
 
-当您使用需要网络服务才能提供的功能时（开发中），我们需要您的数据才能继续为您提供相关服务，但是除非您显式同意，否则我们在默认的状态下不会上传您的任何数据。
+当您使用需要网络服务才能提供的功能时，我们需要您的数据才能继续为您提供相关服务，但是除非您显式同意，否则我们在默认的状态下不会上传您的任何敏感数据。
 
 ---
 
