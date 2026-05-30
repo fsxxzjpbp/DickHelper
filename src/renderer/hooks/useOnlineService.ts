@@ -39,6 +39,8 @@ export function useOnlineService() {
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mountedRef = useRef<boolean>(true);
+    // Tracks whether local records changed since last reportStats, to skip no-op uploads
+    const dirtyRef = useRef<boolean>(false);
 
     // Save config whenever onlineState changes
     const saveConfig = useCallback((state: IOnlineState): void => {
@@ -228,6 +230,8 @@ export function useOnlineService() {
     // Listen for record updates and trigger a debounced report
     useEffect(() => {
         const unsubscribe = DatabaseService.OnRecordsUpdated(() => {
+            // Mark dirty so OnlineView knows to re-report on next mount
+            dirtyRef.current = true;
             const config = getOnlineConfig();
             if (config.enabled && config.uuid !== null) {
                 if (debounceRef.current !== null) {
@@ -248,6 +252,12 @@ export function useOnlineService() {
         };
     }, [reportStats]);
 
+    // Read dirty state (caller checks before reporting)
+    const isDirty = useCallback((): boolean => dirtyRef.current, []);
+
+    // Reset dirty state (caller resets before reportStats to handle concurrent updates)
+    const resetDirty = useCallback((): void => { dirtyRef.current = false; }, []);
+
     return {
         onlineState,
         enableOnline,
@@ -256,5 +266,7 @@ export function useOnlineService() {
         reportStats,
         fetchDailyRanking,
         fetchWeeklyRanking,
+        isDirty,
+        resetDirty,
     };
 }

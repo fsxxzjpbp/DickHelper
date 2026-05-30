@@ -110,6 +110,8 @@ export const App = () => {
         reportStats,
         fetchDailyRanking,
         fetchWeeklyRanking,
+        isDirty,
+        resetDirty,
     } = useOnlineService();
 
     const updateVersion: string | null = UpdateState?.AvailableVersion ?? null;
@@ -272,6 +274,8 @@ export const App = () => {
                             rerollNickname={rerollNickname}
                             fetchDailyRanking={fetchDailyRanking}
                             fetchWeeklyRanking={fetchWeeklyRanking}
+                            isDirty={isDirty}
+                            resetDirty={resetDirty}
                         />
                     )}
                     {activeView === "settings" && (

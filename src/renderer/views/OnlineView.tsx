@@ -32,7 +32,11 @@ interface IOnlineViewProps {
     readonly rerollNickname: () => Promise<string>;
     readonly fetchDailyRanking: (date?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
     readonly fetchWeeklyRanking: (week?: string, limit?: number, offset?: number, sort?: "count" | "duration") => Promise<IRankingResponse>;
+    readonly isDirty: () => boolean;
+    readonly resetDirty: () => void;
 }
+
+const RANKING_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 const PAGE_SIZE = 10;
 
@@ -51,7 +55,7 @@ function GetPeriodLabel(period: "daily" | "weekly"): string {
     return period === "daily" ? "今天" : "本周";
 }
 
-export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDailyRanking, fetchWeeklyRanking }: IOnlineViewProps) => {
+export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDailyRanking, fetchWeeklyRanking, isDirty, resetDirty }: IOnlineViewProps) => {
     const [rankingType, setRankingType] = useState<"count" | "duration">("count");
     const [period, setPeriod] = useState<"daily" | "weekly">("daily");
     const [rankingData, setRankingData] = useState<IRankingResponse | null>(null);
@@ -59,6 +63,9 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
     const [error, setError] = useState<string | null>(null);
     const [offset, setOffset] = useState<number>(0);
     const [rerolling, setRerolling] = useState<boolean>(false);
+
+    // Ranking cache: key = "period-rankingType-offset-dateOrWeek"
+    const rankingCacheRef = useRef<Map<string, { data: IRankingResponse; timestamp: number }>>(new Map());
 
     const handleReroll = useCallback(async (): Promise<void> => {
         setRerolling(true);
@@ -73,20 +80,33 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
     }, [rerollNickname]);
 
     const loadRanking = useCallback(
-        async (newOffset: number = 0): Promise<void> => {
+        async (newOffset: number = 0, forceRefresh: boolean = false): Promise<void> => {
             setLoading(true);
             setError(null);
 
             try {
-                let data: IRankingResponse;
-                if (period === "daily") {
-                    const today = getDateInUTC8(new Date());
-                    data = await fetchDailyRanking(today, PAGE_SIZE, newOffset, rankingType);
-                } else {
-                    const week = getCurrentWeekUTC8();
-                    data = await fetchWeeklyRanking(week, PAGE_SIZE, newOffset, rankingType);
+                const dateOrWeek = period === "daily" ? getDateInUTC8(new Date()) : getCurrentWeekUTC8();
+                const cacheKey = `${period}-${rankingType}-${newOffset}-${dateOrWeek}`;
+
+                // Check cache (skip if forceRefresh)
+                if (!forceRefresh) {
+                    const cached = rankingCacheRef.current.get(cacheKey);
+                    if (cached !== undefined && Date.now() - cached.timestamp < RANKING_CACHE_TTL_MS) {
+                        setRankingData(cached.data);
+                        setOffset(newOffset);
+                        setLoading(false);
+                        return;
+                    }
                 }
 
+                let data: IRankingResponse;
+                if (period === "daily") {
+                    data = await fetchDailyRanking(dateOrWeek, PAGE_SIZE, newOffset, rankingType);
+                } else {
+                    data = await fetchWeeklyRanking(dateOrWeek, PAGE_SIZE, newOffset, rankingType);
+                }
+
+                rankingCacheRef.current.set(cacheKey, { data, timestamp: Date.now() });
                 setRankingData(data);
                 setOffset(newOffset);
             } catch (err: unknown) {
@@ -99,23 +119,31 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
         [period, rankingType, fetchDailyRanking, fetchWeeklyRanking]
     );
 
-    // On mount: report stats first, then load ranking
+    // On mount: only report stats if dirty, then load ranking
     const isInitialMount = useRef(true);
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            reportStats()
-                .catch(() => { /* non-fatal */ })
-                .finally(() => {
-                    void loadRanking(0);
-                });
+            if (isDirty()) {
+                // Reset dirty BEFORE reportStats — if records change during upload,
+                // the IPC listener sets dirty back to true, and next mount will retry
+                resetDirty();
+                reportStats()
+                    .catch(() => { /* non-fatal */ })
+                    .finally(() => {
+                        void loadRanking(0);
+                    });
+            } else {
+                void loadRanking(0);
+            }
         } else {
             void loadRanking(0);
         }
-    }, [loadRanking, reportStats]);
+    }, [loadRanking, reportStats, isDirty, resetDirty]);
 
+    // Refresh button bypasses cache
     const handleRefresh = (): void => {
-        void loadRanking(0);
+        void loadRanking(0, true);
     };
 
     const handleLoadMore = (): void => {
