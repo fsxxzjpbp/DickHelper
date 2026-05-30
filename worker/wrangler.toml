@@ -6,3 +6,7 @@ compatibility_date = "2024-01-01"
 binding = "DB"
 database_name = "dickhelper-leaderboard"
 database_id = "68fa8b0e-78d1-4ae0-8469-250b192ffc63"
+
+[observability.logs]
+enabled = true
+invocation_logs = true

@@ -4,9 +4,9 @@
 
 ## 前置条件
 
-- [Cloudflare 账号](https://dash.cloudflare.com/)（免费即可）
-- [Node.js](https://nodejs.org/) 18+
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/)
+- [Cloudflare 账号](https://dash.cloudflare.com)
+- [Node.js](https://nodejs.org) 18+
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler)
 
 ```bash
 npm install -g wrangler
@@ -243,23 +243,26 @@ wrangler d1 execute dickhelper-leaderboard --remote --command "
 
 | 资源 | 免费额度 | 说明 |
 |------|----------|------|
-| Worker 请求 | 100,000 次/天 | 每用户每天约 10-20 次请求 |
+| Worker 请求 | 100,000 次/天 | 每用户每天约 100-200 次请求 |
 | D1 读取 | 5,000,000 行/天 | 排行榜查询消耗 |
 | D1 写入 | 100,000 行/天 | 上报数据消耗 |
 | D1 存储 | 5 GB | 用户数据极少 |
 
 按 1000 活跃用户估算，每天约消耗：
-- Worker 请求：~20,000 次（远低于 100K 限制）
+- Worker 请求：~200,000 次（可能超过 100K 限制）
 - D1 读取：~50,000 行（远低于 5M 限制）
 - D1 写入：~2,000 行（远低于 100K 限制）
 
 ## 故障排查
 
 **Q: 客户端提示"网络请求失败"**
+
 A: 中国大陆访问 Cloudflare 可能不稳定。确认 Worker URL 正确，尝试使用自定义域名。
 
 **Q: 注册返回 500 错误**
+
 A: 检查 D1 数据库是否已创建并执行了迁移。运行 `npm run migrate -- --remote`（注意 `--remote` 参数，否则只迁移本地数据库）。
 
 **Q: 排行榜数据不更新**
+
 A: 数据上报是幂等的（UPSERT），确认客户端已开启在线功能且网络正常。排行榜显示的是最后一次上报的数据。
