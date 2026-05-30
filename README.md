@@ -7,33 +7,38 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![Mantine](https://img.shields.io/badge/Mantine-7-339AF0.svg)](https://mantine.dev/)
 
-一个简单、高效、**支持全平台使用**的打飞机记录工具。。
+一个简单、高效、**支持全平台使用**的打飞机记录工具。
 
-An easy-to-use masturbation management recording tool.
+A simple, efficient, **cross-platform** masturbation recording tool.
 
 <img width="944" height="671" alt="image" src="https://github.com/user-attachments/assets/4706c1a7-77a2-4ccf-a902-936dd5a616e4" />
 
-没有什么人活跃的QQ交流群：745297798 
-
-该群为作者私人群，仅供作者产出奇怪的开源作品使用。
-
 ---
-## 移动端MVP开发完成
+## 移动端MVP开发完成 | Mobile MVP Released
 
 牛子小助手安卓版本现已上线，功能基本开发完毕，但是由于目前项目是**桌面优先**的策略，移动端在部分功能上可能**有所落后**，还请谅解。
 
-下载地址：https://github.com/zzzdajb/DickHelper/releases/tag/mobile-v0.0.2
+The Android version of DickHelper is now available. Core features are largely complete. However, as the project follows a **desktop-first** strategy, some mobile features may **lag behind** — your understanding is appreciated.
+
+下载地址 | Download: https://github.com/zzzdajb/DickHelper/releases/tag/mobile-v0.0.2
 
 移动端现已支持LAN同步功能，您可以在任意设备上自由的记录您的体验，无需担心数据合并问题。
 
+The mobile version now supports LAN sync. You can freely record your experience on any device without worrying about data merging issues.
+
 ---
 
-## 天梯排行榜
+## 天梯排行榜 | Leaderboard
 
 和全球所有牛子小助手的用户进行时长和次数比拼吧！
 
+Compete with DickHelper users worldwide in duration and count rankings!
+
 该项目部署于Cloudflare Workers，受限于免费服务质量，可能存在不稳定的情况，还请谅解。
 
+This project is deployed on Cloudflare Workers. Due to the limitations of the free tier, instability may occur — your understanding is appreciated.
+
+---
 
 ## 特点 | Features
 
@@ -95,6 +100,8 @@ Release workflow 会校验：
 
 测试自动更新的推荐流程见 [自动更新测试指南](docs/auto-update-testing.md)。
 
+---
+
 ## 技术栈 | Tech Stack
 
 | 层 | Layer | 技术 |
@@ -104,6 +111,8 @@ Release workflow 会校验：
 | 语言 | Language | TypeScript 5.7 (strict) |
 | 组件库 | UI Library | Mantine 7 |
 | 数据库 | Database | SQLite via sql.js (WASM) |
+
+---
 
 ## 数据迁移 | Data Migration
 
@@ -122,9 +131,11 @@ Release workflow 会校验：
 
 所有数据存储在本地 SQLite 数据库中，当您使用本地功能的时候，不会有任何数据上传到任何服务器。未经您允许，我们不会收集您的任何敏感信息——在未来我们可能会收集您的活跃记录以用于软件开发，但是活跃记录仅包含您是否打开软件，而不会包含其他敏感信息。所有信息上报逻辑全部开源于代码当中，如果您对此感到担忧，欢迎您自行审查代码。
 
-All data is stored in a local SQLite database and is never uploaded to any server. We do not collect any of your information without your permission.
-
 当您使用需要网络服务才能提供的功能时，我们需要您的数据才能继续为您提供相关服务，但是除非您显式同意，否则我们在默认的状态下不会上传您的任何敏感数据。
+
+All data is stored in a local SQLite database. When using local features, no data is uploaded to any server. We do not collect any of your sensitive information without your permission — in the future, we may collect activity records for software development purposes, but these records only include whether you have opened the app and do not contain any other sensitive information. All data reporting logic is fully open-sourced in the codebase. If you have concerns, you are welcome to review the code yourself.
+
+When using features that require network services, we need your data to continue providing those services. However, unless you explicitly agree, we will not upload any of your sensitive data by default.
 
 ---
 
@@ -134,8 +145,22 @@ GPL-3.0（GNU General Public License v3.0）
 
 ---
 
-## 友链
+## 社区 | Community
+
+没有什么人活跃的QQ交流群：745297798
+
+该群为作者私人群，仅供作者产出奇怪的开源作品使用。
+
+A QQ group (barely active): 745297798
+
+This is the author's personal group, used solely for the author's open-source projects.
+
+---
+
+## 友链 | Friends
 [Linux.do](https://linux.do/)
+
+---
 
 ## Star History
 
