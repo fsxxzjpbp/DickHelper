@@ -195,55 +195,55 @@ export const OnlineView = ({ onlineState, reportStats, rerollNickname, fetchDail
             </Stack>
 
             {/* User Info Card */}
-            <Paper shadow="sm" radius="md" p="lg" withBorder>
-                <Group justify="space-between" align="center">
-                    <Group gap="sm">
-                        <IconUser size={22} />
-                        <Stack gap={2}>
+            <Paper shadow="sm" radius="md" p="md" withBorder>
+                <Stack gap={6}>
+                    <Group justify="space-between" align="center">
+                        <Group gap="sm">
+                            <IconUser size={22} />
                             <Text size="sm" fw={500}>
                                 {onlineState.nickname ?? "未知用户"}
                             </Text>
-                            {onlineState.uuid !== null && (
-                                <>
-                                    <Group gap={4} align="center">
-                                        <Text size="xs" c="dimmed" ff="monospace">
-                                            {onlineState.uuid}
-                                        </Text>
-                                        <Tooltip label={uuidCopied ? "已复制!" : "复制 UUID"}>
-                                            <ActionIcon
-                                                variant="subtle"
-                                                size="xs"
-                                                color={uuidCopied ? "teal" : "gray"}
-                                                onClick={() => void handleCopyUUID()}
-                                            >
-                                                <IconCopy size={12} />
-                                            </ActionIcon>
-                                        </Tooltip>
-                                    </Group>
-                                    <Text size="10" c="dimmed" fs="italic">
-                                        UUID 是你的登录凭证，请勿泄露给他人
+                        </Group>
+                        <Group gap="sm">
+                            <Button
+                                variant="subtle"
+                                size="xs"
+                                loading={rerolling}
+                                onClick={() => void handleReroll()}
+                            >
+                                换个昵称
+                            </Button>
+                            <Badge variant="light" color="green">
+                                已连接
+                            </Badge>
+                        </Group>
+                    </Group>
+                    {onlineState.uuid !== null && (
+                        <>
+                            <Group justify="space-between" align="center">
+                                <Text size="xs" c="dimmed" ml={30}>UUID</Text>
+                                <Group gap={4} align="center">
+                                    <Text size="xs" ff="monospace">
+                                        {onlineState.uuid}
                                     </Text>
-                                </>
-                            )}
-                            {onlineState.uuid === null && (
-                                <Text size="xs" c="dimmed">UUID: N/A</Text>
-                            )}
-                        </Stack>
-                    </Group>
-                    <Group gap="sm">
-                        <Button
-                            variant="subtle"
-                            size="xs"
-                            loading={rerolling}
-                            onClick={() => void handleReroll()}
-                        >
-                            换个昵称
-                        </Button>
-                        <Badge variant="light" color="green">
-                            已连接
-                        </Badge>
-                    </Group>
-                </Group>
+                                    <Tooltip label={uuidCopied ? "已复制!" : "复制 UUID"}>
+                                        <ActionIcon
+                                            variant="subtle"
+                                            size="xs"
+                                            color={uuidCopied ? "teal" : "gray"}
+                                            onClick={() => void handleCopyUUID()}
+                                        >
+                                            <IconCopy size={12} />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                </Group>
+                            </Group>
+                            <Text size="xs" c="dimmed" fs="italic" ml={30}>
+                                UUID 是你的登录凭证，请勿泄露给他人
+                            </Text>
+                        </>
+                    )}
+                </Stack>
             </Paper>
 
             {/* Percentile Display */}

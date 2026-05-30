@@ -870,3 +870,36 @@ Fixed registration not syncing historical data: added full history sync via batc
 
 - 实际测试验证请求数下降
 - 可选：后端 rate limiting 作为安全网
+
+
+## Session 25: fix: UUID全量展示、复制按钮、安全提示
+
+**Date**: 2026-05-30
+**Task**: fix: UUID全量展示、复制按钮、安全提示
+**Branch**: `main`
+
+### Summary
+
+移除MaskUUID截断逻辑，在OnlineView和Settings两处全量展示UUID，添加复制按钮（navigator.clipboard）及安全提示文案
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0bfc9eb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
