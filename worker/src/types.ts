@@ -10,9 +10,11 @@ export interface User {
 
 export interface DailyStat {
   uuid: string;
+  device_id: string;
   date: string;
   count: number;
   duration: number;
+  records_detail: string | null;
   updated_at: string;
 }
 
@@ -24,13 +26,20 @@ export interface RegisterResponse {
   nickname: string;
 }
 
+export interface ReportRecordDetail {
+  id: string;
+  duration: number;
+}
+
 export interface ReportRequest {
   date: string;
   count: number;
   duration: number;
+  records?: ReportRecordDetail[];
 }
 
 export interface BatchReportRequest {
+  device_id: string;
   stats: ReportRequest[];
 }
 
