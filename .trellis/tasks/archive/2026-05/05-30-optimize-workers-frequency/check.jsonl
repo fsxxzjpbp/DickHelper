@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端质量检查规范"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Hook 规则：cleanup、命名、useRef 用法"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "代码风格：C# 命名约定、注释规范"}
+{"file": ".trellis/tasks/05-30-optimize-workers-frequency/prd.md", "reason": "需求文档：Workers 调用频率优化"}
