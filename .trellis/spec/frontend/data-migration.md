@@ -112,3 +112,25 @@ New format includes a `version` field so future migrations can be deterministic:
   "records": [...]
 }
 ```
+
+### Soft Delete Fields (v2+)
+
+Records may now include `Deleted` and `DeletedAt` fields for tombstone support:
+
+```json
+{
+  "id": "b3f1a2c4-...",
+  "startTime": "2025-02-21T14:30:00.000Z",
+  "duration": 5.5,
+  "notes": "optional text",
+  "deleted": 0,
+  "deletedAt": null
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `deleted` | `number` (0 or 1) | No | Defaults to 0 if absent (backward compatible) |
+| `deletedAt` | `string \| null` | No | ISO 8601 UTC, null if not deleted |
+
+**Import behavior**: Records with `deleted=1` are imported as tombstones (not shown in main list). This enables sync to propagate deletions across devices.

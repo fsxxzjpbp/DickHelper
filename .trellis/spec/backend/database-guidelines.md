@@ -89,9 +89,21 @@ CREATE TABLE IF NOT EXISTS Records (
     StartTime TEXT NOT NULL,     -- ISO 8601 UTC
     EndTime   TEXT NOT NULL,     -- ISO 8601 UTC
     Duration  REAL NOT NULL,     -- minutes
-    Notes     TEXT               -- nullable
+    Notes     TEXT,              -- nullable
+    Deleted   INTEGER DEFAULT 0, -- 0=active, 1=soft-deleted (tombstone)
+    DeletedAt TEXT               -- ISO 8601 UTC, set when Deleted=1
 );
 ```
+
+### Soft Delete Pattern
+
+Records use soft delete (tombstone) instead of physical delete. This enables LAN sync to propagate deletions across devices.
+
+- `DeleteRecord(id)` sets `Deleted=1, DeletedAt=now` instead of `DELETE FROM`
+- `ClearAll()` soft-deletes all records (sets `Deleted=1` for all)
+- All read queries filter with `WHERE Deleted = 0`
+- Tombstones (`Deleted=1`) are included in sync exports so other devices can propagate the deletion
+- Recovery does not propagate — each device manages its own trash independently
 
 ### Naming Conventions
 
@@ -153,8 +165,10 @@ Use `stmt.run([...params])` for mutations, then check `getRowsModified()`:
 
 ```typescript
 public DeleteRecord(id: string): boolean {
-    const stmt = this._db.prepare("DELETE FROM Records WHERE Id = ?");
-    stmt.run([id]);
+    const stmt = this._db.prepare(
+        "UPDATE Records SET Deleted = 1, DeletedAt = ? WHERE Id = ? AND Deleted = 0"
+    );
+    stmt.run([new Date().toISOString(), id]);
     const changes = this._db.getRowsModified();
     stmt.free();
     this._save();
