@@ -120,7 +120,15 @@ export class SyncService {
         }
 
         const result = this._databaseService.ImportRecords(
-            parsed.Records.map((r) => ({ ...r, Notes: r.Notes ?? undefined }))
+            parsed.Records.map((r) => ({
+                Id: r.Id,
+                StartTime: r.StartTime,
+                EndTime: r.EndTime,
+                Duration: r.Duration,
+                Notes: r.Notes ?? undefined,
+                Deleted: r.Deleted,
+                DeletedAt: r.DeletedAt ?? undefined,
+            }))
         );
 
         return {
@@ -131,13 +139,15 @@ export class SyncService {
     }
 
     private GetDesktopRecordsAsJson(): string {
-        const rawRecords = this._databaseService.GetRecords();
+        const rawRecords = this._databaseService.GetAllRecordsWithTombstones();
         const records: IRecordRaw[] = rawRecords.map((r) => ({
             Id: r.Id,
             StartTime: r.StartTime,
             EndTime: r.EndTime,
             Duration: r.Duration,
             Notes: r.Notes ?? undefined,
+            Deleted: r.Deleted,
+            DeletedAt: r.DeletedAt ?? undefined,
         }));
         return ExportRecordsToJson(records);
     }

@@ -61,6 +61,19 @@ export class DatabaseService {
         return GetApi().ClearAll();
     }
 
+    public static async GetDeletedRecords(): Promise<IRecord[]> {
+        const rawRecords: IRecordRaw[] = await GetApi().GetDeletedRecords();
+        return rawRecords.map((r) => DatabaseService.MapRawToRecord(r));
+    }
+
+    public static async RestoreRecord(id: string): Promise<boolean> {
+        return GetApi().RestoreRecord(id);
+    }
+
+    public static async PurgeDeleted(): Promise<void> {
+        return GetApi().PurgeDeleted();
+    }
+
     public static async GetStats(): Promise<IStats> {
         return GetApi().GetStats();
     }
@@ -110,10 +123,10 @@ export class DatabaseService {
             return { Imported: 0, Skipped: 0, Rejected: 0 };
         }
 
-        let records: { Id: string; StartTime?: string; EndTime?: string; Duration: number; Notes?: string }[];
+        let records: { Id: string; StartTime?: string; EndTime?: string; Duration: number; Notes?: string; Deleted?: number; DeletedAt?: string | null }[];
 
         if (Array.isArray(rawData)) {
-            // 旧版格式：JSON 数组
+            // 旧版格式：JSON 数组（无 Deleted 字段）
             records = rawData.map((item: Record<string, unknown>) => ({
                 Id: String(item.id ?? ""),
                 // 旧版 startTime 实际是结束时间，映射到 EndTime
@@ -130,13 +143,19 @@ export class DatabaseService {
             Array.isArray((rawData as Record<string, unknown>).records)
         ) {
             // 新版格式
-            records = ((rawData as Record<string, unknown>).records as Record<string, unknown>[]).map((item) => ({
-                Id: String(item.Id ?? ""),
-                StartTime: String(item.StartTime ?? ""),
-                EndTime: String(item.EndTime ?? ""),
-                Duration: Number(item.Duration ?? 0),
-                Notes: item.Notes !== undefined && item.Notes !== null ? String(item.Notes) : undefined,
-            }));
+            records = ((rawData as Record<string, unknown>).records as Record<string, unknown>[]).map((item) => {
+                const deleted: number | undefined = typeof item.Deleted === "number" ? item.Deleted : undefined;
+                const deletedAt: string | null = typeof item.DeletedAt === "string" ? item.DeletedAt : null;
+                return {
+                    Id: String(item.Id ?? ""),
+                    StartTime: String(item.StartTime ?? ""),
+                    EndTime: String(item.EndTime ?? ""),
+                    Duration: Number(item.Duration ?? 0),
+                    Notes: item.Notes !== undefined && item.Notes !== null ? String(item.Notes) : undefined,
+                    Deleted: deleted,
+                    DeletedAt: deletedAt,
+                };
+            });
         } else {
             return { Imported: 0, Skipped: 0, Rejected: 0 };
         }
@@ -157,6 +176,8 @@ export class DatabaseService {
                 EndTime: r.EndTime.toISOString(),
                 Duration: r.Duration,
                 Notes: r.Notes ?? undefined,
+                Deleted: r.Deleted === true ? 1 : 0,
+                DeletedAt: r.DeletedAt?.toISOString() ?? undefined,
             })),
         };
         return JSON.stringify(exportData, null, 2);
@@ -173,6 +194,8 @@ export class DatabaseService {
             EndTime: new Date(raw.EndTime),
             Duration: raw.Duration,
             Notes: raw.Notes ?? undefined,
+            Deleted: raw.Deleted === 1,
+            DeletedAt: raw.DeletedAt ? new Date(raw.DeletedAt) : undefined,
         };
     }
 }

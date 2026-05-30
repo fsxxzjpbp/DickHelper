@@ -10,6 +10,9 @@ const electronAPI = {
         ipcRenderer.invoke("records:save", startTime, endTime, duration, notes),
     DeleteRecord: (id: string): Promise<boolean> => ipcRenderer.invoke("records:delete", id),
     ClearAll: (): Promise<void> => ipcRenderer.invoke("records:clear-all"),
+    GetDeletedRecords: (): Promise<unknown[]> => ipcRenderer.invoke("records:get-deleted"),
+    RestoreRecord: (id: string): Promise<boolean> => ipcRenderer.invoke("records:restore", id),
+    PurgeDeleted: (): Promise<void> => ipcRenderer.invoke("records:purge-deleted"),
     GetStats: (): Promise<unknown> => ipcRenderer.invoke("records:get-stats"),
     GetDailyCounts: (startTimestamp: number, endTimestamp: number): Promise<unknown[]> =>
         ipcRenderer.invoke("records:get-daily-counts", startTimestamp, endTimestamp),

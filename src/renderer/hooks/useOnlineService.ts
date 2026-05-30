@@ -10,7 +10,7 @@ import {
     getDailyRanking,
     getWeeklyRanking,
     deleteAccount,
-    aggregateAllDailyStats,
+    aggregateAllDailyStatsWithRecords,
 } from "@dickhelper/core";
 import { DatabaseService } from "../services/DatabaseService";
 
@@ -21,6 +21,7 @@ export interface IOnlineState {
     readonly uuid: string | null;
     readonly nickname: string | null;
     readonly baseUrl: string;
+    readonly deviceId: string | null;
 }
 
 export function useOnlineService() {
@@ -31,6 +32,7 @@ export function useOnlineService() {
             uuid: config.uuid,
             nickname: config.nickname,
             baseUrl: config.baseUrl,
+            deviceId: config.deviceId,
         };
     });
 
@@ -45,24 +47,25 @@ export function useOnlineService() {
             uuid: state.uuid,
             nickname: state.nickname,
             baseUrl: state.baseUrl,
+            deviceId: state.deviceId,
         });
     }, []);
 
     // Report all local stats to the server (full sync, single batch request)
     const reportStats = useCallback(async (): Promise<void> => {
         const config = getOnlineConfig();
-        if (!config.enabled || config.uuid === null) return;
+        if (!config.enabled || config.uuid === null || config.deviceId === null) return;
 
         try {
             const records = await DatabaseService.GetRecords();
-            const allStats = aggregateAllDailyStats(records);
+            const allStats = aggregateAllDailyStatsWithRecords(records);
 
             if (allStats.size === 0) return;
 
             const stats = Array.from(allStats.entries()).map(
-                ([date, { count, duration }]) => ({ date, count, duration })
+                ([date, { count, duration, records: recordDetails }]) => ({ date, count, duration, records: recordDetails })
             );
-            await batchReportDailyStats(config.baseUrl, config.uuid, stats);
+            await batchReportDailyStats(config.baseUrl, config.uuid, config.deviceId, stats);
             console.log("[OnlineService] Stats reported:", stats.length, "days");
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
@@ -92,6 +95,7 @@ export function useOnlineService() {
     const enableOnline = useCallback(async (): Promise<string> => {
         const uuid = generateUUID();
         const config = getOnlineConfig();
+        const deviceId = config.deviceId ?? generateUUID(); // Reuse existing device_id or generate new one
         const baseUrl = config.baseUrl;
 
         const result = await registerLeaderboard(baseUrl, uuid);
@@ -101,6 +105,7 @@ export function useOnlineService() {
             uuid,
             nickname: result.nickname,
             baseUrl,
+            deviceId,
         };
 
         if (mountedRef.current) {
@@ -111,12 +116,12 @@ export function useOnlineService() {
         // Report all local stats (full sync, single batch request)
         try {
             const records = await DatabaseService.GetRecords();
-            const allStats = aggregateAllDailyStats(records);
+            const allStats = aggregateAllDailyStatsWithRecords(records);
             if (allStats.size > 0) {
                 const stats = Array.from(allStats.entries()).map(
-                    ([date, { count, duration }]) => ({ date, count, duration })
+                    ([date, { count, duration, records: recordDetails }]) => ({ date, count, duration, records: recordDetails })
                 );
-                await batchReportDailyStats(baseUrl, uuid, stats);
+                await batchReportDailyStats(baseUrl, uuid, deviceId, stats);
             }
         } catch {
             // Non-fatal: stats will be reported on next timer tick
@@ -146,6 +151,7 @@ export function useOnlineService() {
             uuid: null,
             nickname: null,
             baseUrl: config.baseUrl,
+            deviceId: config.deviceId, // Preserve device_id when disabling
         };
 
         if (mountedRef.current) {
@@ -168,6 +174,7 @@ export function useOnlineService() {
             uuid: config.uuid,
             nickname: result.nickname,
             baseUrl: config.baseUrl,
+            deviceId: config.deviceId,
         };
 
         if (mountedRef.current) {

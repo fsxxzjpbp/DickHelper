@@ -256,6 +256,24 @@ function RegisterIpcHandlers(): void {
         mainWindow?.webContents.send("records-updated");
     });
 
+    ipcMain.handle("records:get-deleted", () => {
+        return databaseService!.GetDeletedRecords();
+    });
+
+    ipcMain.handle("records:restore", (...args) => {
+        const id: string = args[1] as string;
+        const success = databaseService!.RestoreRecord(id);
+        if (success) {
+            mainWindow?.webContents.send("records-updated");
+        }
+        return success;
+    });
+
+    ipcMain.handle("records:purge-deleted", () => {
+        databaseService!.PurgeDeleted();
+        mainWindow?.webContents.send("records-updated");
+    });
+
     ipcMain.handle("records:get-stats", () => {
         return databaseService!.GetStats();
     });

@@ -18,6 +18,8 @@ interface IDbRecord {
     EndTime: string;
     Duration: number;
     Notes: string | null;
+    Deleted: number;
+    DeletedAt: string | null;
 }
 
 interface IImportRecord {
@@ -26,6 +28,8 @@ interface IImportRecord {
     EndTime?: string;
     Duration: number;
     Notes?: string;
+    Deleted?: number;
+    DeletedAt?: string | null;
 }
 
 const TABLE_NAME = "Records";
@@ -66,6 +70,19 @@ export class DatabaseService {
                 Value TEXT NOT NULL
             )
         `);
+
+        // Migration: add Deleted and DeletedAt columns if missing
+        const columns = db.exec("PRAGMA table_info(Records)");
+        const columnNames = new Set(
+            (columns[0]?.values ?? []).map((row) => row[1] as string)
+        );
+        if (!columnNames.has("Deleted")) {
+            db.run(`ALTER TABLE Records ADD COLUMN Deleted INTEGER DEFAULT 0`);
+        }
+        if (!columnNames.has("DeletedAt")) {
+            db.run(`ALTER TABLE Records ADD COLUMN DeletedAt TEXT`);
+        }
+
         return new DatabaseService(db, dbPath);
     }
 
@@ -104,7 +121,23 @@ export class DatabaseService {
 
     public GetRecords(): IDbRecord[] {
         const rows = this._queryAll(
-            `SELECT Id, StartTime, EndTime, Duration, Notes FROM ${TABLE_NAME} ORDER BY EndTime DESC`
+            `SELECT Id, StartTime, EndTime, Duration, Notes, Deleted, DeletedAt FROM ${TABLE_NAME} WHERE Deleted = 0 ORDER BY EndTime DESC`
+        );
+        return rows as unknown as IDbRecord[];
+    }
+
+    /** Get all records including tombstones (for sync) */
+    public GetAllRecordsWithTombstones(): IDbRecord[] {
+        const rows = this._queryAll(
+            `SELECT Id, StartTime, EndTime, Duration, Notes, Deleted, DeletedAt FROM ${TABLE_NAME} ORDER BY EndTime DESC`
+        );
+        return rows as unknown as IDbRecord[];
+    }
+
+    /** Get soft-deleted records (recycle bin) */
+    public GetDeletedRecords(): IDbRecord[] {
+        const rows = this._queryAll(
+            `SELECT Id, StartTime, EndTime, Duration, Notes, Deleted, DeletedAt FROM ${TABLE_NAME} WHERE Deleted = 1 ORDER BY DeletedAt DESC`
         );
         return rows as unknown as IDbRecord[];
     }
@@ -112,17 +145,18 @@ export class DatabaseService {
     public SaveRecord(startTime: Date, endTime: Date, duration: number, notes?: string): IDbRecord {
         const id: string = randomUUID();
         const stmt = this._db.prepare(
-            `INSERT INTO ${TABLE_NAME} (Id, StartTime, EndTime, Duration, Notes) VALUES (?, ?, ?, ?, ?)`
+            `INSERT INTO ${TABLE_NAME} (Id, StartTime, EndTime, Duration, Notes, Deleted) VALUES (?, ?, ?, ?, ?, 0)`
         );
         stmt.run([id, startTime.toISOString(), endTime.toISOString(), duration, notes ?? null]);
         stmt.free();
         this._save();
-        return { Id: id, StartTime: startTime.toISOString(), EndTime: endTime.toISOString(), Duration: duration, Notes: notes ?? null };
+        return { Id: id, StartTime: startTime.toISOString(), EndTime: endTime.toISOString(), Duration: duration, Notes: notes ?? null, Deleted: 0, DeletedAt: null };
     }
 
     public DeleteRecord(id: string): boolean {
-        const stmt = this._db.prepare(`DELETE FROM ${TABLE_NAME} WHERE Id = ?`);
-        stmt.run([id]);
+        const now = new Date().toISOString();
+        const stmt = this._db.prepare(`UPDATE ${TABLE_NAME} SET Deleted = 1, DeletedAt = ? WHERE Id = ? AND Deleted = 0`);
+        stmt.run([now, id]);
         const changes = this._db.getRowsModified();
         stmt.free();
         this._save();
@@ -130,7 +164,26 @@ export class DatabaseService {
     }
 
     public ClearAll(): void {
-        const stmt = this._db.prepare(`DELETE FROM ${TABLE_NAME}`);
+        const now = new Date().toISOString();
+        const stmt = this._db.prepare(`UPDATE ${TABLE_NAME} SET Deleted = 1, DeletedAt = ? WHERE Deleted = 0`);
+        stmt.run([now]);
+        stmt.free();
+        this._save();
+    }
+
+    /** Restore a soft-deleted record */
+    public RestoreRecord(id: string): boolean {
+        const stmt = this._db.prepare(`UPDATE ${TABLE_NAME} SET Deleted = 0, DeletedAt = NULL WHERE Id = ? AND Deleted = 1`);
+        stmt.run([id]);
+        const changes = this._db.getRowsModified();
+        stmt.free();
+        this._save();
+        return changes > 0;
+    }
+
+    /** Permanently delete all soft-deleted records */
+    public PurgeDeleted(): void {
+        const stmt = this._db.prepare(`DELETE FROM ${TABLE_NAME} WHERE Deleted = 1`);
         stmt.run();
         stmt.free();
         this._save();
@@ -151,16 +204,16 @@ export class DatabaseService {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
         const totalRow = this._queryOne(
-            `SELECT COUNT(*) as count, AVG(Duration) as avgDur FROM ${TABLE_NAME}`
+            `SELECT COUNT(*) as count, AVG(Duration) as avgDur FROM ${TABLE_NAME} WHERE Deleted = 0`
         );
 
         const weekRow = this._queryOne(
-            `SELECT COUNT(*) as count FROM ${TABLE_NAME} WHERE EndTime >= ?`,
+            `SELECT COUNT(*) as count FROM ${TABLE_NAME} WHERE EndTime >= ? AND Deleted = 0`,
             [oneWeekAgo.toISOString()]
         );
 
         const monthRow = this._queryOne(
-            `SELECT COUNT(*) as count FROM ${TABLE_NAME} WHERE EndTime >= ?`,
+            `SELECT COUNT(*) as count FROM ${TABLE_NAME} WHERE EndTime >= ? AND Deleted = 0`,
             [monthStart.toISOString()]
         );
 
@@ -174,7 +227,7 @@ export class DatabaseService {
 
     public GetDailyCounts(startTimestamp: number, endTimestamp: number): IDailyCount[] {
         const rows = this._queryAll(
-            `SELECT EndTime FROM ${TABLE_NAME} WHERE EndTime >= ? AND EndTime <= ?`,
+            `SELECT EndTime FROM ${TABLE_NAME} WHERE EndTime >= ? AND EndTime <= ? AND Deleted = 0`,
             [new Date(startTimestamp).toISOString(), new Date(endTimestamp).toISOString()]
         );
 
@@ -195,7 +248,7 @@ export class DatabaseService {
 
     /** 按小时统计次数（0-23，使用本地时区） */
     public GetHourlyDistribution(): IHourlyCount[] {
-        const rows = this._queryAll(`SELECT EndTime FROM ${TABLE_NAME}`);
+        const rows = this._queryAll(`SELECT EndTime FROM ${TABLE_NAME} WHERE Deleted = 0`);
         const counts: number[] = new Array(24).fill(0);
 
         for (const row of rows) {
@@ -212,7 +265,7 @@ export class DatabaseService {
 
     /** 按星期统计次数（0=周一，6=周日，使用本地时区） */
     public GetWeekdayDistribution(): IWeekdayCount[] {
-        const rows = this._queryAll(`SELECT EndTime FROM ${TABLE_NAME}`);
+        const rows = this._queryAll(`SELECT EndTime FROM ${TABLE_NAME} WHERE Deleted = 0`);
         const counts: number[] = new Array(7).fill(0);
 
         for (const row of rows) {
@@ -233,7 +286,7 @@ export class DatabaseService {
         const now = new Date();
         const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
         const rows = this._queryAll(
-            `SELECT EndTime FROM ${TABLE_NAME} WHERE EndTime >= ?`,
+            `SELECT EndTime FROM ${TABLE_NAME} WHERE EndTime >= ? AND Deleted = 0`,
             [startDate.toISOString()]
         );
 
@@ -257,7 +310,7 @@ export class DatabaseService {
 
     /** 获取所有记录的持续时长（分钟） */
     public GetAllDurations(): number[] {
-        const rows = this._queryAll(`SELECT Duration FROM ${TABLE_NAME}`);
+        const rows = this._queryAll(`SELECT Duration FROM ${TABLE_NAME} WHERE Deleted = 0`);
         const durations: number[] = [];
         for (const row of rows) {
             durations.push((row as { Duration: number }).Duration);
@@ -275,8 +328,11 @@ export class DatabaseService {
 
     // 批量导入（带去重），返回导入统计
     public ImportRecords(records: IImportRecord[]): IImportResult {
-        const stmt = this._db.prepare(
-            `INSERT INTO ${TABLE_NAME} (Id, StartTime, EndTime, Duration, Notes) VALUES (?, ?, ?, ?, ?)`
+        const insertStmt = this._db.prepare(
+            `INSERT INTO ${TABLE_NAME} (Id, StartTime, EndTime, Duration, Notes, Deleted, DeletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`
+        );
+        const tombstoneStmt = this._db.prepare(
+            `UPDATE ${TABLE_NAME} SET Deleted = 1, DeletedAt = ? WHERE Id = ? AND Deleted = 0`
         );
 
         const imported: string[] = [];
@@ -300,8 +356,18 @@ export class DatabaseService {
                 continue;
             }
 
-            // 去重
+            const incomingDeleted: number = record.Deleted ?? 0;
+            const incomingDeletedAt: string | null = record.DeletedAt ?? null;
+
+            // 如果本地已有此记录
             if (this.RecordExists(record.Id)) {
+                // 如果对方标记为已删除，本地也标记为已删除（墓碑传播）
+                if (incomingDeleted === 1) {
+                    tombstoneStmt.bind([incomingDeletedAt ?? new Date().toISOString(), record.Id]);
+                    tombstoneStmt.step();
+                    tombstoneStmt.reset();
+                }
+                // 否则保持本地状态不变（跳过）
                 continue;
             }
 
@@ -324,13 +390,14 @@ export class DatabaseService {
                 continue;
             }
 
-            stmt.bind([record.Id, finalStartTime.toISOString(), endDate.toISOString(), record.Duration, record.Notes ?? null]);
-            stmt.step();
-            stmt.reset();
+            insertStmt.bind([record.Id, finalStartTime.toISOString(), endDate.toISOString(), record.Duration, record.Notes ?? null, incomingDeleted, incomingDeletedAt]);
+            insertStmt.step();
+            insertStmt.reset();
             imported.push(record.Id);
         }
 
-        stmt.free();
+        insertStmt.free();
+        tombstoneStmt.free();
         this._save();
 
         // 计算跳过的重复记录

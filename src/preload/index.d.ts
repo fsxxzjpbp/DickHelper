@@ -28,6 +28,9 @@ declare global {
             SaveRecord: (startTime: string, endTime: string, duration: number, notes?: string) => Promise<IRecordRaw>;
             DeleteRecord: (id: string) => Promise<boolean>;
             ClearAll: () => Promise<void>;
+            GetDeletedRecords: () => Promise<IRecordRaw[]>;
+            RestoreRecord: (id: string) => Promise<boolean>;
+            PurgeDeleted: () => Promise<void>;
             GetStats: () => Promise<IStats>;
             GetDailyCounts: (startTimestamp: number, endTimestamp: number) => Promise<IDailyCount[]>;
             ImportRecords: (records: IImportRecord[]) => Promise<IImportResult>;
