@@ -842,3 +842,31 @@ Fixed registration not syncing historical data: added full history sync via batc
 ### Next Steps
 
 - None - task complete
+
+---
+
+## 2026-05-30 | optimize-workers-frequency
+
+### Goal
+
+优化 Workers API 调用频率。单用户一天测试产生 560 次请求，Free Plan 限额 10 万/天。
+
+### What Happened
+
+- 分析发现主要来源：排行榜切换（日/周、次数/时长）每次触发真实网络请求，无缓存
+- 次要来源：OnlineView mount 时无条件 reportStats，即使数据没变化
+- 实施两项优化：
+  1. Ranking 缓存：2 分钟 TTL，同参数走缓存，刷新按钮绕过
+  2. Dirty flag：追踪 records-updated 事件，数据没变则跳过 reportStats
+- Corner case 处理：resetDirty 在 reportStats 之前调用，避免上报期间新数据丢失
+
+### Outcome
+
+- 预估日常使用请求数：从 560/天 → ~10/天
+- TypeScript + ESLint 通过
+- 3 文件改动，58 行新增
+
+### Next Steps
+
+- 实际测试验证请求数下降
+- 可选：后端 rate limiting 作为安全网
