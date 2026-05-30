@@ -805,3 +805,40 @@ Fixed registration not syncing historical data: added full history sync via batc
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: 软删除与多端同步策略
+
+**Date**: 2026-05-30
+**Task**: 软删除与多端同步策略
+**Branch**: `main`
+
+### Summary
+
+实现软删除+墓碑机制，LAN同步传播删除标记，排行榜多设备合并(device_id+records_detail)，回收站UI。Workers后端尚未上线，breaking change已做。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5889eb5` | (see git log) |
+| `74f3397` | (see git log) |
+| `b962d7f` | (see git log) |
+| `d8bf57c` | (see git log) |
+| `2a3fa6e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
