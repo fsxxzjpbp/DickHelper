@@ -9,6 +9,8 @@ import {
     RECORD_END_TIME_COLUMN_NAME,
     RECORD_DURATION_COLUMN_NAME,
     RECORD_NOTES_COLUMN_NAME,
+    RECORD_DELETED_COLUMN_NAME,
+    RECORD_DELETED_AT_COLUMN_NAME,
     SETTINGS_TABLE_NAME,
     SETTINGS_KEY_COLUMN_NAME,
     SETTINGS_VALUE_COLUMN_NAME,
@@ -21,16 +23,23 @@ interface IRecordRow {
     readonly EndTime: string;
     readonly Duration: number;
     readonly Notes: string | null;
+    readonly Deleted: number;
+    readonly DeletedAt: string | null;
 }
 
 interface ISettingRow {
     readonly Value: string;
 }
 
-const RECORD_SELECT_SQL = `SELECT ${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME} FROM ${RECORDS_TABLE_NAME} ORDER BY ${RECORD_END_TIME_COLUMN_NAME} DESC`;
-const RECORD_INSERT_SQL = `INSERT INTO ${RECORDS_TABLE_NAME} (${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}) VALUES (?, ?, ?, ?, ?)`;
-const RECORD_INSERT_OR_IGNORE_SQL = `INSERT OR IGNORE INTO ${RECORDS_TABLE_NAME} (${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}) VALUES (?, ?, ?, ?, ?)`;
-const RECORD_DELETE_SQL = `DELETE FROM ${RECORDS_TABLE_NAME} WHERE ${RECORD_ID_COLUMN_NAME} = ?`;
+const RECORD_SELECT_SQL = `SELECT ${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}, ${RECORD_DELETED_COLUMN_NAME}, ${RECORD_DELETED_AT_COLUMN_NAME} FROM ${RECORDS_TABLE_NAME} WHERE ${RECORD_DELETED_COLUMN_NAME} = 0 ORDER BY ${RECORD_END_TIME_COLUMN_NAME} DESC`;
+const RECORD_SELECT_ALL_SQL = `SELECT ${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}, ${RECORD_DELETED_COLUMN_NAME}, ${RECORD_DELETED_AT_COLUMN_NAME} FROM ${RECORDS_TABLE_NAME} ORDER BY ${RECORD_END_TIME_COLUMN_NAME} DESC`;
+const RECORD_SELECT_DELETED_SQL = `SELECT ${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}, ${RECORD_DELETED_COLUMN_NAME}, ${RECORD_DELETED_AT_COLUMN_NAME} FROM ${RECORDS_TABLE_NAME} WHERE ${RECORD_DELETED_COLUMN_NAME} = 1 ORDER BY ${RECORD_DELETED_AT_COLUMN_NAME} DESC`;
+const RECORD_INSERT_SQL = `INSERT INTO ${RECORDS_TABLE_NAME} (${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}, ${RECORD_DELETED_COLUMN_NAME}) VALUES (?, ?, ?, ?, ?, 0)`;
+const RECORD_INSERT_OR_IGNORE_SQL = `INSERT OR IGNORE INTO ${RECORDS_TABLE_NAME} (${RECORD_ID_COLUMN_NAME}, ${RECORD_START_TIME_COLUMN_NAME}, ${RECORD_END_TIME_COLUMN_NAME}, ${RECORD_DURATION_COLUMN_NAME}, ${RECORD_NOTES_COLUMN_NAME}, ${RECORD_DELETED_COLUMN_NAME}) VALUES (?, ?, ?, ?, ?, ?)`;
+const RECORD_SOFT_DELETE_SQL = `UPDATE ${RECORDS_TABLE_NAME} SET ${RECORD_DELETED_COLUMN_NAME} = 1, ${RECORD_DELETED_AT_COLUMN_NAME} = ? WHERE ${RECORD_ID_COLUMN_NAME} = ? AND ${RECORD_DELETED_COLUMN_NAME} = 0`;
+const RECORD_RESTORE_SQL = `UPDATE ${RECORDS_TABLE_NAME} SET ${RECORD_DELETED_COLUMN_NAME} = 0, ${RECORD_DELETED_AT_COLUMN_NAME} = NULL WHERE ${RECORD_ID_COLUMN_NAME} = ? AND ${RECORD_DELETED_COLUMN_NAME} = 1`;
+const RECORD_PURGE_SQL = `DELETE FROM ${RECORDS_TABLE_NAME} WHERE ${RECORD_DELETED_COLUMN_NAME} = 1`;
+const RECORD_TOMBSTONE_SQL = `UPDATE ${RECORDS_TABLE_NAME} SET ${RECORD_DELETED_COLUMN_NAME} = 1, ${RECORD_DELETED_AT_COLUMN_NAME} = ? WHERE ${RECORD_ID_COLUMN_NAME} = ? AND ${RECORD_DELETED_COLUMN_NAME} = 0`;
 const SETTING_SELECT_SQL = `SELECT ${SETTINGS_VALUE_COLUMN_NAME} FROM ${SETTINGS_TABLE_NAME} WHERE ${SETTINGS_KEY_COLUMN_NAME} = ? LIMIT 1`;
 const SETTING_UPSERT_SQL = `INSERT OR REPLACE INTO ${SETTINGS_TABLE_NAME} (${SETTINGS_KEY_COLUMN_NAME}, ${SETTINGS_VALUE_COLUMN_NAME}) VALUES (?, ?)`;
 
@@ -48,6 +57,16 @@ export async function InitializeDatabase(db: SQLiteDatabase): Promise<void> {
             ${SETTINGS_VALUE_COLUMN_NAME} TEXT NOT NULL
         );
     `);
+
+    // Migration: add Deleted and DeletedAt columns if missing
+    const tableInfo = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${RECORDS_TABLE_NAME})`);
+    const columnNames = new Set(tableInfo.map((row) => row.name));
+    if (!columnNames.has(RECORD_DELETED_COLUMN_NAME)) {
+        await db.execAsync(`ALTER TABLE ${RECORDS_TABLE_NAME} ADD COLUMN ${RECORD_DELETED_COLUMN_NAME} INTEGER DEFAULT 0`);
+    }
+    if (!columnNames.has(RECORD_DELETED_AT_COLUMN_NAME)) {
+        await db.execAsync(`ALTER TABLE ${RECORDS_TABLE_NAME} ADD COLUMN ${RECORD_DELETED_AT_COLUMN_NAME} TEXT`);
+    }
 }
 
 export class MobileDatabaseService {
@@ -59,6 +78,18 @@ export class MobileDatabaseService {
 
     public async GetRecords(): Promise<IRecord[]> {
         const rows = await this._db.getAllAsync<IRecordRow>(RECORD_SELECT_SQL);
+        return rows.map((row) => this.MapRowToRecord(row));
+    }
+
+    /** Get all records including tombstones (for sync) */
+    public async GetAllRecordsWithTombstones(): Promise<IRecord[]> {
+        const rows = await this._db.getAllAsync<IRecordRow>(RECORD_SELECT_ALL_SQL);
+        return rows.map((row) => this.MapRowToRecord(row));
+    }
+
+    /** Get soft-deleted records (recycle bin) */
+    public async GetDeletedRecords(): Promise<IRecord[]> {
+        const rows = await this._db.getAllAsync<IRecordRow>(RECORD_SELECT_DELETED_SQL);
         return rows.map((row) => this.MapRowToRecord(row));
     }
 
@@ -75,8 +106,18 @@ export class MobileDatabaseService {
     }
 
     public async DeleteRecord(id: string): Promise<boolean> {
-        const result = await this._db.runAsync(RECORD_DELETE_SQL, id);
+        const now = new Date().toISOString();
+        const result = await this._db.runAsync(RECORD_SOFT_DELETE_SQL, now, id);
         return result.changes > 0;
+    }
+
+    public async RestoreRecord(id: string): Promise<boolean> {
+        const result = await this._db.runAsync(RECORD_RESTORE_SQL, id);
+        return result.changes > 0;
+    }
+
+    public async PurgeDeleted(): Promise<void> {
+        await this._db.runAsync(RECORD_PURGE_SQL);
     }
 
     public async GetSetting(key: string): Promise<string | null> {
@@ -102,13 +143,33 @@ export class MobileDatabaseService {
         let skipped = parsed.DuplicateIds;
 
         for (const record of parsed.Records) {
+            const incomingDeleted: number = record.Deleted ?? 0;
+            const incomingDeletedAt: string | null = record.DeletedAt ?? null;
+
+            // Check if record already exists
+            const existing = await this._db.getFirstAsync<{ Deleted: number }>(
+                `SELECT ${RECORD_DELETED_COLUMN_NAME} FROM ${RECORDS_TABLE_NAME} WHERE ${RECORD_ID_COLUMN_NAME} = ?`,
+                record.Id
+            );
+
+            if (existing !== null) {
+                // Record exists: if incoming is a tombstone, propagate deletion
+                if (incomingDeleted === 1 && existing.Deleted === 0) {
+                    await this._db.runAsync(RECORD_TOMBSTONE_SQL, incomingDeletedAt ?? new Date().toISOString(), record.Id);
+                }
+                skipped++;
+                continue;
+            }
+
+            // New record: insert
             const result = await this._db.runAsync(
                 RECORD_INSERT_OR_IGNORE_SQL,
                 record.Id,
                 record.StartTime,
                 record.EndTime,
                 record.Duration,
-                record.Notes ?? null
+                record.Notes ?? null,
+                incomingDeleted
             );
 
             if (result.changes > 0) {
@@ -126,7 +187,7 @@ export class MobileDatabaseService {
     }
 
     public async ExportToJson(): Promise<string> {
-        const records = await this.GetRecords();
+        const records = await this.GetAllRecordsWithTombstones();
         return ExportRecordsToJson(records.map((record) => this.MapRecordToRaw(record)));
     }
 
@@ -137,6 +198,8 @@ export class MobileDatabaseService {
             EndTime: new Date(row.EndTime),
             Duration: row.Duration,
             Notes: row.Notes ?? undefined,
+            Deleted: row.Deleted === 1,
+            DeletedAt: row.DeletedAt ? new Date(row.DeletedAt) : undefined,
         };
     }
 
@@ -147,6 +210,8 @@ export class MobileDatabaseService {
             EndTime: record.EndTime.toISOString(),
             Duration: record.Duration,
             Notes: record.Notes ?? undefined,
+            Deleted: record.Deleted ? 1 : 0,
+            DeletedAt: record.DeletedAt?.toISOString() ?? undefined,
         };
     }
 
