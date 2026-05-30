@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend quality checks for worker API changes"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality checks for desktop and mobile changes"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "Code style conventions for frontend changes"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify D1 schema changes follow guidelines"}
+{"file": ".trellis/spec/frontend/data-migration.md", "reason": "Verify SQLite migration follows guidelines"}

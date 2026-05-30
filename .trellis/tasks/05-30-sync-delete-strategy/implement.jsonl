@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "D1 schema changes for daily_stats table (records_detail column)"}
+{"file": ".trellis/spec/frontend/data-migration.md", "reason": "SQLite schema migration for Records table (Deleted, DeletedAt columns)"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "IRecord/IRecordRaw type changes for Deleted field"}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "Mobile database and sync service changes"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "This task spans backend (worker), frontend (desktop), and mobile layers"}
