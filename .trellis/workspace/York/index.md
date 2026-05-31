@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 25
-- **Last Active**: 2026-05-30
+- **Total Sessions**: 26
+- **Last Active**: 2026-05-31
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~905 | Active |
+| `journal-1.md` | ~940 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 26 | 2026-05-31 | 统一预测算法并接入桌面与移动端 | `202ba97`, `561099b`, `c7d4280` | `main` |
 | 25 | 2026-05-30 | fix: UUID全量展示、复制按钮、安全提示 | `0bfc9eb` | `main` |
 | 24 | 2026-05-30 | 软删除与多端同步策略 | `5889eb5`, `74f3397`, `b962d7f`, `d8bf57c`, `2a3fa6e` | `main` |
 | 23 | 2026-05-30 | Leaderboard fixes: full sync, batch API, UI polish | `49b80cc`, `ac5d829`, `6c6a449`, `b27375c`, `e705f4e`, `4981e4e`, `861a57d`, `4d5abc6`, `50b9fd6`, `901caf1`, `3fe80f6`, `75605ac`, `40903b3` | `main` |

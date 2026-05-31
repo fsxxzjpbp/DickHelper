@@ -903,3 +903,38 @@ Fixed registration not syncing historical data: added full history sync via batc
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: 统一预测算法并接入桌面与移动端
+
+**Date**: 2026-05-31
+**Task**: 统一预测算法并接入桌面与移动端
+**Branch**: `main`
+
+### Summary
+
+将自慰记录预测逻辑统一到 packages/core，共享小样本窗口预测算法并接入桌面端和移动端；补齐 core 测试，验证移动端 typecheck 与本地 release APK 构建通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `202ba97` | (see git log) |
+| `561099b` | (see git log) |
+| `c7d4280` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
