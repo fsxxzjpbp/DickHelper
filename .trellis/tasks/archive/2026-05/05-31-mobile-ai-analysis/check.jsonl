@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "代码风格检查"}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "移动端实现合规检查"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端质量规范检查"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "代码复用检查"}

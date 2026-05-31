@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "命名规范、代码风格、注释规则"}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "移动端实现约束：代码位置、packages/core 规则、cross-platform 逻辑归属"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Hook 使用规则，useRecords 等现有 hook 的行为约定"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端质量规范：禁止模式、必要模式"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "跨端代码复用决策指南"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层架构决策指南"}
