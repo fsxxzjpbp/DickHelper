@@ -938,3 +938,36 @@ Fixed registration not syncing historical data: added full history sync via batc
 ### Next Steps
 
 - None - task complete
+
+
+## Session 27: 安卓端 LLM 自慰评价功能
+
+**Date**: 2026-06-01
+**Task**: 安卓端 LLM 自慰评价功能
+**Branch**: `main`
+
+### Summary
+
+提取 AI 分析逻辑到 packages/core 共享层（ai.types/buildAnalysisData/buildPrompt/analyzeLocally/analyzeWithApi/analyze），重构桌面端使用共享模块，实现安卓端 AI 设置页面和统计页 AI 分析集成，新增 9 个单元测试。桌面端和移动端类型检查通过，桌面端构建成功。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ac64180` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
