@@ -1,70 +1,125 @@
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Surface, Text, useTheme } from "react-native-paper";
-import type { IRecord } from "@dickhelper/shared";
+import { AnalyzePrediction } from "@dickhelper/core";
 import { useRecords } from "../../src/hooks/useRecords";
-import { FormatDateTime, FormatDurationMinutes, FormatRelativeDays } from "../../src/utils/formatters";
+import { FormatDateTime, FormatRelativeDays } from "../../src/utils/formatters";
 
-function CalculatePrediction(records: IRecord[]): {
-    readonly lastRecord: IRecord | null;
-    readonly averageGapMinutes: number;
-    readonly nextEstimate: Date | null;
-    readonly daysSinceLast: number | null;
-} {
-    if (records.length === 0) {
-        return {
-            lastRecord: null,
-            averageGapMinutes: 0,
-            nextEstimate: null,
-            daysSinceLast: null,
-        };
+type PredictionAnalysis = ReturnType<typeof AnalyzePrediction>;
+
+function FormatDateRange(start: Date | null, end: Date | null): string {
+    if (start === null || end === null) {
+        return "--";
     }
 
-    const ordered = [...records].sort((left, right) => left.EndTime.getTime() - right.EndTime.getTime());
-    const lastRecord = ordered[ordered.length - 1] ?? null;
+    return `${FormatDateTime(start)} - ${FormatDateTime(end)}`;
+}
 
-    if (lastRecord === null) {
-        return {
-            lastRecord: null,
-            averageGapMinutes: 0,
-            nextEstimate: null,
-            daysSinceLast: null,
-        };
+function GetTimeBucketLabel(date: Date | null): string {
+    if (date === null) {
+        return "--";
     }
 
-    let totalGapMinutes = 0;
-    let gapCount = 0;
+    const hour = date.getHours();
 
-    for (let index = 1; index < ordered.length; index++) {
-        const current = ordered[index];
-        const previous = ordered[index - 1];
-        if (current === undefined || previous === undefined) {
-            continue;
-        }
-
-        totalGapMinutes += (current.EndTime.getTime() - previous.EndTime.getTime()) / 60_000;
-        gapCount++;
+    if (hour < 6) {
+        return "00:00-06:00";
     }
 
-    const averageGapMinutes = gapCount > 0 ? totalGapMinutes / gapCount : 0;
-    const nextEstimate =
-        gapCount > 0
-            ? new Date(lastRecord.EndTime.getTime() + averageGapMinutes * 60_000)
-            : null;
-    const daysSinceLast = (Date.now() - lastRecord.EndTime.getTime()) / 86_400_000;
+    if (hour < 12) {
+        return "06:00-12:00";
+    }
 
-    return {
-        lastRecord,
-        averageGapMinutes,
-        nextEstimate,
-        daysSinceLast,
-    };
+    if (hour < 18) {
+        return "12:00-18:00";
+    }
+
+    return "18:00-24:00";
+}
+
+function GetStatusTitle(status: PredictionAnalysis["Status"]): string {
+    switch (status) {
+        case "window_predicted":
+            return "精确窗口";
+        case "coarse_range_only":
+            return "粗略范围";
+        case "unstable_pattern":
+            return "模式不稳";
+        case "insufficient_samples":
+        default:
+            return "样本不足";
+    }
+}
+
+function GetStatusText(prediction: PredictionAnalysis): string {
+    switch (prediction.Status) {
+        case "window_predicted":
+            return `已选 ${prediction.ChosenConfidenceLevel === null ? "--" : `${Math.round(prediction.ChosenConfidenceLevel * 100)}%`} 置信窗口，半宽约 ${prediction.HalfWidthDays === null ? "--" : FormatRelativeDays(prediction.HalfWidthDays)}。`;
+        case "coarse_range_only":
+            return "中心点能算出来，但窗口过宽，只能先保留粗范围。";
+        case "unstable_pattern":
+            return "近期波动较大，暂时只保留中心估计。";
+        case "insufficient_samples":
+        default:
+            return "至少还需要 2 个相邻间隔，继续记录后再预测。";
+    }
+}
+
+function GetRangeText(prediction: PredictionAnalysis): string {
+    switch (prediction.Status) {
+        case "window_predicted":
+            return `窗口：${FormatDateRange(prediction.PredictedWindowStart, prediction.PredictedWindowEnd)}`;
+        case "coarse_range_only":
+            return `范围：${FormatDateRange(prediction.CoarseRangeStart, prediction.CoarseRangeEnd)}`;
+        case "unstable_pattern":
+            return `中心：${prediction.PredictedCenterAt !== null ? FormatDateTime(prediction.PredictedCenterAt) : "--"}`;
+        case "insufficient_samples":
+        default:
+            return "样本不足，继续记录后再预测。";
+    }
+}
+
+function GetBucketLabel(prediction: PredictionAnalysis): string {
+    return prediction.Status === "insufficient_samples" ? "最近时段" : "中心时段";
+}
+
+function GetBucketValue(prediction: PredictionAnalysis): string {
+    return prediction.Status === "insufficient_samples"
+        ? GetTimeBucketLabel(prediction.LastRecordAt)
+        : GetTimeBucketLabel(prediction.PredictedCenterAt);
+}
+
+function GetTileValue(value: number | null): string {
+    if (value === null) {
+        return "--";
+    }
+
+    return FormatRelativeDays(value);
 }
 
 export default function PredictionScreen() {
     const theme = useTheme();
     const { records, loading, error } = useRecords();
-    const prediction = useMemo(() => CalculatePrediction(records), [records]);
+    const prediction = useMemo(() => AnalyzePrediction(records), [records]);
+
+    const statusColor = (() => {
+        switch (prediction.Status) {
+            case "window_predicted":
+                return theme.colors.primary;
+            case "coarse_range_only":
+                return theme.colors.secondary;
+            case "unstable_pattern":
+                return theme.colors.error;
+            case "insufficient_samples":
+            default:
+                return theme.colors.outline;
+        }
+    })();
+
+    const sampleText = `共 ${prediction.SampleCount} 条记录，${prediction.IntervalSampleCount} 个相邻间隔。`;
+    const rangeText = GetRangeText(prediction);
+    const bucketLabel = GetBucketLabel(prediction);
+    const bucketValue = GetBucketValue(prediction);
 
     return (
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -73,7 +128,7 @@ export default function PredictionScreen() {
                     预测
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                    根据你的记录推测下一次
+                    根据最近的相邻间隔推测下一次窗口
                 </Text>
             </View>
 
@@ -87,41 +142,46 @@ export default function PredictionScreen() {
                 </Text>
             ) : (
                 <>
-                    <Surface style={styles.heroSurface} elevation={1}>
+                    <Surface style={[styles.heroSurface, { borderColor: theme.colors.outline }]} elevation={1}>
                         <Text variant="labelLarge" style={styles.heroLabel}>
                             当前判断
                         </Text>
-                        <Text variant="headlineSmall" style={[styles.heroValue, { color: theme.colors.primary }]}>
-                            {prediction.lastRecord === null || prediction.averageGapMinutes === 0
-                                ? "样本不足"
-                                : "趋势稳定"}
+                        <Text variant="headlineSmall" style={[styles.heroValue, { color: statusColor }]}>
+                            {GetStatusTitle(prediction.Status)}
                         </Text>
                         <Text variant="bodyMedium" style={styles.heroText}>
-                            {prediction.nextEstimate === null
-                                ? "继续记录后，这里会给出一个简单的本地参考。"
-                                : `按当前平均间隔，下一次大致会落在 ${FormatDateTime(prediction.nextEstimate)} 左右。`}
+                            {GetStatusText(prediction)}
+                        </Text>
+                        <Text variant="bodyMedium" style={styles.heroRange}>
+                            {rangeText}
+                        </Text>
+                        <Text variant="bodySmall" style={styles.heroCaption}>
+                            {sampleText}
+                        </Text>
+                        <Text variant="bodySmall" style={styles.heroCaption}>
+                            {bucketLabel}：{bucketValue}
                         </Text>
                     </Surface>
 
                     <View style={styles.grid}>
                         <MetricTile
-                            title="平均间隔"
-                            value={prediction.averageGapMinutes > 0 ? FormatDurationMinutes(prediction.averageGapMinutes) : "--"}
+                            title="中心间隔"
+                            value={GetTileValue(prediction.CenterIntervalDays)}
                             accentColor={theme.colors.secondary}
                         />
                         <MetricTile
                             title="距离上次"
-                            value={prediction.daysSinceLast !== null ? FormatRelativeDays(prediction.daysSinceLast) : "--"}
+                            value={prediction.DaysSinceLast !== null ? FormatRelativeDays(prediction.DaysSinceLast) : "--"}
                             accentColor={theme.colors.tertiary}
                         />
                         <MetricTile
                             title="最近一次"
-                            value={prediction.lastRecord !== null ? FormatDateTime(prediction.lastRecord.EndTime) : "暂无"}
+                            value={prediction.LastRecordAt !== null ? FormatDateTime(prediction.LastRecordAt) : "暂无"}
                             accentColor={theme.colors.error}
                         />
                         <MetricTile
                             title="记录数"
-                            value={String(records.length)}
+                            value={String(prediction.SampleCount)}
                             accentColor={theme.colors.primary}
                         />
                     </View>
@@ -172,6 +232,7 @@ const styles = StyleSheet.create({
         padding: 20,
         backgroundColor: "#ffffff",
         gap: 10,
+        borderWidth: 1,
     },
     heroLabel: {
         color: "#64748b",
@@ -182,6 +243,14 @@ const styles = StyleSheet.create({
     heroText: {
         color: "#334155",
         lineHeight: 22,
+    },
+    heroRange: {
+        color: "#0f172a",
+        fontWeight: "700",
+        lineHeight: 22,
+    },
+    heroCaption: {
+        color: "#64748b",
     },
     grid: {
         flexDirection: "row",

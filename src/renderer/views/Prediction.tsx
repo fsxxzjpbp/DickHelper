@@ -1,10 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Group, Paper, Stack, Text, ThemeIcon, Title } from "@mantine/core";
-import { IconBolt, IconClock, IconFlame, IconMoon, IconSun } from "@tabler/icons-react";
+import { IconAlertCircle, IconBolt, IconClock, IconFlame, IconMoon } from "@tabler/icons-react";
 import { useRecords } from "../hooks/useRecords";
-import { PredictionService, type IPrediction, type PredictionLevel } from "../services/PredictionService";
+import { PredictionService } from "../services/PredictionService";
 
-function FormatDuration(days: number): string {
+type PredictionAnalysis = ReturnType<typeof PredictionService.Analyze>;
+
+type StatusConfig = {
+    readonly color: string;
+    readonly label: string;
+    readonly icon: typeof IconClock;
+};
+
+function FormatDays(days: number | null): string {
+    if (days === null) {
+        return "--";
+    }
+
     if (days <= 0) {
         return "今天";
     }
@@ -16,12 +28,22 @@ function FormatDuration(days: number): string {
     return `${days.toFixed(1)} 天`;
 }
 
-function FormatInterval(days: number): string {
-    if (days <= 0) {
+function FormatDateTime(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
+function FormatDateRange(start: Date | null, end: Date | null): string {
+    if (start === null || end === null) {
         return "--";
     }
 
-    return `${days.toFixed(1)} 天`;
+    return `${FormatDateTime(start)} - ${FormatDateTime(end)}`;
 }
 
 function FormatCountdown(target: Date | null): string {
@@ -46,63 +68,110 @@ function FormatCountdown(target: Date | null): string {
     return `${hours} 小时 ${minutes} 分钟`;
 }
 
-function FormatEstimate(target: Date | null): string {
-    if (target === null) {
-        return "暂无";
+function GetTimeBucketLabel(date: Date | null): string {
+    if (date === null) {
+        return "--";
     }
 
-    const month = target.getMonth() + 1;
-    const day = target.getDate();
-    const hour = String(target.getHours()).padStart(2, "0");
-    return `${month}/${day} ${hour}:00`;
+    const hour = date.getHours();
+
+    if (hour < 6) {
+        return "00:00-06:00";
+    }
+
+    if (hour < 12) {
+        return "06:00-12:00";
+    }
+
+    if (hour < 18) {
+        return "12:00-18:00";
+    }
+
+    return "18:00-24:00";
 }
 
-function GetLevelConfig(level: PredictionLevel): { color: string; label: string; icon: typeof IconSun } {
-    switch (level) {
-        case "medium":
-            return { color: "yellow", label: "中", icon: IconMoon };
-        case "high":
-            return { color: "orange", label: "高", icon: IconBolt };
-        case "veryHigh":
-            return { color: "red", label: "很高", icon: IconFlame };
-        case "low":
+function GetStatusConfig(status: PredictionAnalysis["Status"]): StatusConfig {
+    switch (status) {
+        case "window_predicted":
+            return { color: "green", label: "精确窗口", icon: IconBolt };
+        case "coarse_range_only":
+            return { color: "yellow", label: "粗略范围", icon: IconMoon };
+        case "unstable_pattern":
+            return { color: "red", label: "模式不稳", icon: IconFlame };
+        case "insufficient_samples":
         default:
-            return { color: "green", label: "低", icon: IconSun };
+            return { color: "gray", label: "样本不足", icon: IconAlertCircle };
     }
 }
 
-function GetActiveHourText(prediction: IPrediction): string {
-    if (prediction.PeakHour === undefined) {
-        return "记录还不够多，暂时看不出稳定的高峰时段。";
+function GetStatusSummary(prediction: PredictionAnalysis): string {
+    switch (prediction.Status) {
+        case "window_predicted":
+            return `已选 ${prediction.ChosenConfidenceLevel === null ? "--" : `${Math.round(prediction.ChosenConfidenceLevel * 100)}%`} 置信窗口，半宽约 ${FormatDays(prediction.HalfWidthDays)}。`;
+        case "coarse_range_only":
+            return "中心点能算出来，但窗口过宽，只能先保留粗范围。";
+        case "unstable_pattern":
+            return "近期波动较大，暂时只保留中心估计。";
+        case "insufficient_samples":
+        default:
+            return "至少还需要 2 个相邻间隔，继续记录后再预测。";
+    }
+}
+
+function GetRangeText(prediction: PredictionAnalysis): string {
+    switch (prediction.Status) {
+        case "window_predicted":
+            return `精确窗口：${FormatDateRange(prediction.PredictedWindowStart, prediction.PredictedWindowEnd)}。`;
+        case "coarse_range_only":
+            return `粗略范围：${FormatDateRange(prediction.CoarseRangeStart, prediction.CoarseRangeEnd)}。`;
+        case "unstable_pattern":
+            return `中心估计：${prediction.PredictedCenterAt !== null ? FormatDateTime(prediction.PredictedCenterAt) : "--"}。`;
+        case "insufficient_samples":
+        default:
+            return "样本不足，继续记录后再预测。";
+    }
+}
+
+function GetBucketText(prediction: PredictionAnalysis): { readonly label: string; readonly value: string } {
+    if (prediction.Status === "insufficient_samples") {
+        return {
+            label: "最近时段",
+            value: GetTimeBucketLabel(prediction.LastRecordAt),
+        };
     }
 
-    return `最常出现的时段大约是 ${String(prediction.PeakHour).padStart(2, "0")}:00。`;
+    return {
+        label: "中心时段",
+        value: GetTimeBucketLabel(prediction.PredictedCenterAt),
+    };
 }
 
 export const Prediction = () => {
     const { records, loading } = useRecords();
     const [countdown, setCountdown] = useState<string>("--");
 
-    const prediction = PredictionService.Analyze(records);
-    const levelConfig = GetLevelConfig(prediction.Level);
-    const LevelIcon = levelConfig.icon;
-    const nextEstimateTime = prediction.NextEstimate?.getTime() ?? 0;
+    const prediction = useMemo(() => PredictionService.Analyze(records), [records]);
+    const statusConfig = GetStatusConfig(prediction.Status);
+    const StatusIcon = statusConfig.icon;
+    const bucketText = GetBucketText(prediction);
+    const countdownTargetTime = prediction.PredictedCenterAt?.getTime() ?? 0;
 
     useEffect(() => {
-        setCountdown(FormatCountdown(prediction.NextEstimate));
+        const target = countdownTargetTime === 0 ? null : new Date(countdownTargetTime);
+        setCountdown(FormatCountdown(target));
 
-        if (prediction.NextEstimate === null) {
+        if (target === null) {
             return;
         }
 
         const timer = window.setInterval(() => {
-            setCountdown(FormatCountdown(prediction.NextEstimate));
+            setCountdown(FormatCountdown(new Date(countdownTargetTime)));
         }, 60_000);
 
         return () => {
             window.clearInterval(timer);
         };
-    }, [nextEstimateTime]);
+    }, [countdownTargetTime]);
 
     if (loading) {
         return (
@@ -122,7 +191,7 @@ export const Prediction = () => {
             <Stack gap={4}>
                 <Title order={3}>精力预测</Title>
                 <Text size="sm" c="dimmed">
-                    基于历史记录给出一个简单的时间判断。
+                    基于最近的相邻间隔给出一个窗口判断。
                 </Text>
             </Stack>
 
@@ -130,15 +199,15 @@ export const Prediction = () => {
                 <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
                     <Stack gap="sm">
                         <Group gap="sm" align="center">
-                            <ThemeIcon size={44} radius="xl" variant="light" color={levelConfig.color}>
-                                <LevelIcon size={22} />
+                            <ThemeIcon size={44} radius="xl" variant="light" color={statusConfig.color}>
+                                <StatusIcon size={22} />
                             </ThemeIcon>
                             <Stack gap={0}>
                                 <Text size="sm" c="dimmed">
                                     当前判断
                                 </Text>
-                                <Text size="lg" fw={700} c={levelConfig.color}>
-                                    {levelConfig.label}
+                                <Text size="lg" fw={700} c={statusConfig.color}>
+                                    {statusConfig.label}
                                 </Text>
                             </Stack>
                         </Group>
@@ -148,44 +217,49 @@ export const Prediction = () => {
                                 <Text size="xs" c="dimmed">
                                     距上次
                                 </Text>
-                                <Text fw={600}>{FormatDuration(prediction.DaysSinceLast)}</Text>
+                                <Text fw={600}>{FormatDays(prediction.DaysSinceLast)}</Text>
                             </Stack>
 
                             <Stack gap={0}>
                                 <Text size="xs" c="dimmed">
-                                    平均间隔
+                                    中心间隔
                                 </Text>
-                                <Text fw={600}>{FormatInterval(prediction.AverageInterval)}</Text>
+                                <Text fw={600}>{FormatDays(prediction.CenterIntervalDays)}</Text>
                             </Stack>
 
                             <Stack gap={0}>
                                 <Text size="xs" c="dimmed">
-                                    预计下次
+                                    倒计时
                                 </Text>
                                 <Text fw={600}>{countdown}</Text>
                             </Stack>
                         </Group>
                     </Stack>
 
-                    <Badge variant="light" color={levelConfig.color} size="lg">
-                        {levelConfig.label}
+                    <Badge variant="light" color={statusConfig.color} size="lg">
+                        {statusConfig.label}
                     </Badge>
                 </Group>
 
                 <Text size="sm" c="dimmed" mt="md">
-                    {prediction.NextEstimate
-                        ? `大致会落在 ${FormatEstimate(prediction.NextEstimate)} 左右。`
-                        : "样本还少，继续记录后再看趋势会更可靠。"}
+                    {GetStatusSummary(prediction)}
+                </Text>
+
+                <Text size="sm" c="dimmed" mt={6}>
+                    共 {prediction.SampleCount} 条记录，{prediction.IntervalSampleCount} 个相邻间隔。
                 </Text>
             </Paper>
 
             <Paper shadow="sm" radius="md" p="lg" withBorder>
                 <Group gap="sm" mb="sm">
                     <IconClock size={18} />
-                    <Title order={4}>活跃时段</Title>
+                    <Title order={4}>窗口与时段</Title>
                 </Group>
                 <Text size="sm" c="dimmed">
-                    {GetActiveHourText(prediction)}
+                    {GetRangeText(prediction)}
+                </Text>
+                <Text size="sm" c="dimmed" mt={6}>
+                    {bucketText.label}：{bucketText.value}
                 </Text>
             </Paper>
         </Stack>
