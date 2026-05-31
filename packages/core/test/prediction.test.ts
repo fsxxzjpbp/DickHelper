@@ -69,8 +69,29 @@ RunTest("predicts a stable window for uniform 3-day intervals", () => {
     assert.equal(result.FallbackReason, "none");
 });
 
+RunTest("predicts a stable window for intervals away from the 3-day prior", () => {
+    const records = BuildSequence("prior-away", BASE_END_TIME, [6, 6]);
+
+    const result = AnalyzePrediction(records, FIXED_NOW);
+
+    assert.equal(result.Status, "window_predicted");
+    assert.equal(result.SampleCount, 3);
+    assert.equal(result.IntervalSampleCount, 2);
+    assert.equal(result.RecentIntervalCount, 2);
+    assert.equal(result.MedianIntervalDays, 6);
+    assert.equal(result.CenterIntervalDays, 5);
+    assert.ok(result.DispersionDays !== null);
+    assert.equal(result.ChosenConfidenceLevel, 0.95);
+    assert.ok(result.HalfWidthDays !== null);
+    assert.ok(result.HalfWidthDays <= 1.5);
+    assert.notEqual(result.PredictedCenterAt, null);
+    assert.notEqual(result.PredictedWindowStart, null);
+    assert.notEqual(result.PredictedWindowEnd, null);
+    assert.equal(result.FallbackReason, "none");
+});
+
 RunTest("downgrades high-dispersion patterns out of precise windows", () => {
-    const records = BuildSequence("noisy", BASE_END_TIME, [1, 5, 1, 5, 1]);
+    const records = BuildSequence("noisy", BASE_END_TIME, [1, 4, 8, 13, 21]);
 
     const result = AnalyzePrediction(records, FIXED_NOW);
 

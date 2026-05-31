@@ -65,7 +65,7 @@ export function AnalyzePrediction(records: readonly IRecord[], now: Date = new D
     const medianIntervalDays = GetMedian(recentIntervals);
     const centerIntervalDays =
         (PRIOR_INTERVAL_DAYS * PRIOR_STRENGTH + Sum(recentIntervals)) / (PRIOR_STRENGTH + recentIntervalCount);
-    const dispersionDays = GetMadDispersion(recentIntervals, centerIntervalDays);
+    const dispersionDays = GetMadDispersion(recentIntervals, medianIntervalDays);
     const predictedCenterAt = lastRecordAt === null ? null : new Date(lastRecordAt.getTime() + centerIntervalDays * DAY_MS);
     const coarseRange = predictedCenterAt === null ? null : BuildCoarseRange(predictedCenterAt);
     const selectedWindow = SelectConfidenceWindow(dispersionDays);
