@@ -9,7 +9,7 @@
     "@dickhelper/shared": "file:../shared"
   },
   "scripts": {
-    "test": "tsx test/recordImportExport.test.ts",
+    "test": "tsx test/recordImportExport.test.ts && tsx test/prediction.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

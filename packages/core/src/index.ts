@@ -35,3 +35,10 @@ export {
     getOnlineConfig,
     setOnlineConfig,
 } from "./leaderboardStorage";
+export { AnalyzePrediction } from "./prediction";
+export type {
+    IPredictionAnalysis,
+    PredictionConfidenceLevel,
+    PredictionFallbackReason,
+    PredictionStatus,
+} from "./prediction";
