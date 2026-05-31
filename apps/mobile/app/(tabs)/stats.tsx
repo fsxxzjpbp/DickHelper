@@ -1,9 +1,20 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Surface, Text, useTheme } from "react-native-paper";
+import { ActivityIndicator, Button, Surface, Text, useTheme } from "react-native-paper";
 import type { IRecord } from "@dickhelper/shared";
+import { BuildAnalysisData, Analyze } from "@dickhelper/core";
+import type { IAiConfig } from "@dickhelper/core";
 import { useRecords } from "../../src/hooks/useRecords";
+import { useMobileDatabaseService } from "../../src/hooks/useMobileDatabaseService";
 import { FormatDurationMinutes, FormatDateTime } from "../../src/utils/formatters";
+
+const AI_PROVIDER_KEY = "ai_provider";
+const AI_API_ENDPOINT_KEY = "ai_api_endpoint";
+const AI_API_KEY_KEY = "ai_api_key";
+const AI_MODEL_KEY = "ai_model";
+
+const DEFAULT_API_ENDPOINT = "https://api.openai.com/v1/chat/completions";
+const DEFAULT_MODEL = "gpt-4o-mini";
 
 function CalculateMetrics(records: IRecord[]): {
     readonly total: number;
@@ -45,8 +56,44 @@ function CalculateMetrics(records: IRecord[]): {
 
 export default function StatsScreen() {
     const theme = useTheme();
+    const database = useMobileDatabaseService();
     const { records, loading, error } = useRecords();
     const metrics = useMemo(() => CalculateMetrics(records), [records]);
+
+    const [aiLoading, setAiLoading] = useState<boolean>(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const [aiResult, setAiResult] = useState<string | null>(null);
+    const [hasAnalyzed, setHasAnalyzed] = useState<boolean>(false);
+
+    const HandleAnalyze = useCallback(async (): Promise<void> => {
+        setAiLoading(true);
+        setAiError(null);
+
+        try {
+            const savedProvider = await database.GetSetting(AI_PROVIDER_KEY);
+            const savedEndpoint = await database.GetSetting(AI_API_ENDPOINT_KEY);
+            const savedKey = await database.GetSetting(AI_API_KEY_KEY);
+            const savedModel = await database.GetSetting(AI_MODEL_KEY);
+
+            const config: IAiConfig = {
+                Provider: savedProvider === "openai" ? "openai" : "local",
+                ApiEndpoint: savedEndpoint ?? DEFAULT_API_ENDPOINT,
+                ApiKey: savedKey ?? "",
+                Model: savedModel ?? DEFAULT_MODEL,
+            };
+
+            const analysisData = BuildAnalysisData(records);
+            const result = await Analyze(analysisData, config);
+
+            setAiResult(result);
+            setHasAnalyzed(true);
+        } catch (caught: unknown) {
+            const errorMessage = caught instanceof Error ? caught.message : String(caught);
+            setAiError(errorMessage);
+        } finally {
+            setAiLoading(false);
+        }
+    }, [database, records]);
 
     return (
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -99,6 +146,53 @@ export default function StatsScreen() {
                         <Text variant="bodyMedium" style={styles.noteValue}>
                             {metrics.latestEndTime !== null ? FormatDateTime(metrics.latestEndTime) : "暂无记录"}
                         </Text>
+                    </Surface>
+
+                    <Surface style={styles.aiSurface} elevation={1}>
+                        <Text variant="titleMedium" style={styles.aiTitle}>
+                            AI 分析
+                        </Text>
+                        <Text variant="bodyMedium" style={styles.aiSubtitle}>
+                            基于记录数据生成行为分析洞察
+                        </Text>
+
+                        <Button
+                            mode="contained-tonal"
+                            icon={hasAnalyzed ? "refresh" : "brain"}
+                            onPress={() => {
+                                void HandleAnalyze();
+                            }}
+                            loading={aiLoading}
+                            disabled={aiLoading || records.length === 0}
+                            style={styles.aiButton}
+                        >
+                            {hasAnalyzed ? "重新分析" : "开始分析"}
+                        </Button>
+
+                        {aiLoading ? (
+                            <View style={styles.aiLoadingRow}>
+                                <ActivityIndicator size="small" />
+                                <Text variant="bodyMedium" style={styles.aiLoadingText}>
+                                    正在分析中...
+                                </Text>
+                            </View>
+                        ) : null}
+
+                        {aiError !== null ? (
+                            <Text variant="bodyMedium" style={styles.aiErrorText}>
+                                {aiError}
+                            </Text>
+                        ) : null}
+
+                        {aiResult !== null ? (
+                            <Surface style={styles.aiResultSurface} elevation={0}>
+                                {aiResult.split("\n\n").map((paragraph, index) => (
+                                    <Text key={index} variant="bodyMedium" style={styles.aiResultText}>
+                                        {paragraph}
+                                    </Text>
+                                ))}
+                            </Surface>
+                        ) : null}
                     </Surface>
                 </>
             )}
@@ -174,5 +268,43 @@ const styles = StyleSheet.create({
     },
     noteValue: {
         color: "#0f172a",
+    },
+    aiSurface: {
+        borderRadius: 12,
+        backgroundColor: "#ffffff",
+        padding: 16,
+        gap: 12,
+    },
+    aiTitle: {
+        color: "#0f172a",
+        fontWeight: "700",
+    },
+    aiSubtitle: {
+        color: "#475569",
+    },
+    aiButton: {
+        borderRadius: 12,
+        alignSelf: "flex-start",
+    },
+    aiLoadingRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    aiLoadingText: {
+        color: "#64748b",
+    },
+    aiErrorText: {
+        color: "#dc2626",
+    },
+    aiResultSurface: {
+        borderRadius: 10,
+        backgroundColor: "#f8fafc",
+        padding: 12,
+        gap: 8,
+    },
+    aiResultText: {
+        color: "#0f172a",
+        lineHeight: 22,
     },
 });

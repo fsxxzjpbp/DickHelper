@@ -1,10 +1,9 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, session } from "electron";
 import path from "node:path";
 import { DatabaseService } from "./database";
-import { Analyze as AiAnalyze, type IAiConfig } from "./ai-service";
+import type { IAiConfig } from "@dickhelper/core";
 import { UpdateService } from "./updateService";
 import { SyncService } from "./syncService";
-import type { IHourlyCount, IMonthlyCount, IWeekdayCount } from "@dickhelper/shared";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -20,68 +19,6 @@ const ALLOWED_AI_SETTING_KEYS: Set<string> = new Set([
     "ai_api_endpoint",
     "ai_model",
 ]);
-
-interface IAiDurationStats {
-    Min: number;
-    Max: number;
-    Avg: number;
-    Median: number;
-}
-
-interface IAiAnalysisData {
-    TotalCount: number;
-    AverageDuration: number;
-    FrequencyPerWeek: number;
-    FrequencyPerMonth: number;
-    HourlyDistribution: IHourlyCount[];
-    WeekdayDistribution: IWeekdayCount[];
-    MonthlyTrend: IMonthlyCount[];
-    DurationStats: IAiDurationStats;
-}
-
-function BuildMedian(values: number[]): number {
-    if (values.length === 0) {
-        return 0;
-    }
-
-    const sortedValues: number[] = [...values].sort((a, b) => a - b);
-    const middleIndex: number = Math.floor(sortedValues.length / 2);
-
-    if (sortedValues.length % 2 !== 0) {
-        return sortedValues[middleIndex]!;
-    }
-
-    return (sortedValues[middleIndex - 1]! + sortedValues[middleIndex]!) / 2;
-}
-
-function BuildAiAnalysisData(): IAiAnalysisData {
-    if (!databaseService) {
-        throw new Error("数据库尚未初始化。");
-    }
-
-    const stats = databaseService.GetStats();
-    const hourlyDistribution = databaseService.GetHourlyDistribution();
-    const weekdayDistribution = databaseService.GetWeekdayDistribution();
-    const monthlyTrend = databaseService.GetMonthlyTrend();
-    const durations = databaseService.GetAllDurations();
-    const sortedDurations = [...durations].sort((a, b) => a - b);
-
-    return {
-        TotalCount: stats.TotalCount,
-        AverageDuration: stats.AverageDuration,
-        FrequencyPerWeek: stats.FrequencyPerWeek,
-        FrequencyPerMonth: stats.FrequencyPerMonth,
-        HourlyDistribution: hourlyDistribution,
-        WeekdayDistribution: weekdayDistribution,
-        MonthlyTrend: monthlyTrend,
-        DurationStats: {
-            Min: sortedDurations[0] ?? 0,
-            Max: sortedDurations[sortedDurations.length - 1] ?? 0,
-            Avg: stats.AverageDuration,
-            Median: BuildMedian(sortedDurations),
-        },
-    };
-}
 
 function BuildAiConfig(): IAiConfig {
     if (!databaseService) {
@@ -326,7 +263,16 @@ function RegisterIpcHandlers(): void {
     });
 
     ipcMain.handle("ai:analyze", async () => {
-        return AiAnalyze(BuildAiAnalysisData(), BuildAiConfig());
+        const { BuildAnalysisData, Analyze } = await import("@dickhelper/core");
+        const rawRecords = databaseService!.GetRecords();
+        const records: import("@dickhelper/shared").IRecord[] = rawRecords.map((r) => ({
+            Id: r.Id,
+            StartTime: new Date(r.StartTime),
+            EndTime: new Date(r.EndTime),
+            Duration: r.Duration,
+            Notes: r.Notes ?? undefined,
+        }));
+        return Analyze(BuildAnalysisData(records), BuildAiConfig());
     });
 
     ipcMain.handle("updates:get-state", () => {

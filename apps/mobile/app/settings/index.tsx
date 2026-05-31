@@ -420,7 +420,7 @@ export default function SettingsScreen() {
                     <List.Subheader>功能</List.Subheader>
                     <List.Item
                         title="AI 配置"
-                        description="后续版本开放的占位入口"
+                        description="配置 AI 分析方式和 API 参数"
                         left={(props) => <List.Icon {...props} icon="robot-outline" />}
                         right={(props) => <List.Icon {...props} icon="chevron-right" />}
                         onPress={() => router.push("/settings/ai")}
