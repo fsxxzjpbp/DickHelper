@@ -129,13 +129,11 @@ Release workflow 会校验：
 
 ## 隐私说明 | Privacy Statement
 
-所有数据存储在本地 SQLite 数据库中，当您使用本地功能的时候，不会有任何数据上传到任何服务器。未经您允许，我们不会收集您的任何敏感信息——在未来我们可能会收集您的活跃记录以用于软件开发，但是活跃记录仅包含您是否打开软件，而不会包含其他敏感信息。所有信息上报逻辑全部开源于代码当中，如果您对此感到担忧，欢迎您自行审查代码。
+所有数据存储在本地 SQLite 数据库中，当您使用本地功能的时候，不会有任何数据上传到任何服务器。
+未经您允许，我们不会收集您的任何敏感信息——我们可能会收集您的非敏感信息以用于软件开发，包括但是不限于：系统版本、软件版本，以及匿名生成的UUID。
+所有信息上报逻辑全部开源于代码当中，如果您对此感到担忧，欢迎您自行审查代码。
 
-当您使用需要网络服务才能提供的功能时，我们需要您的数据才能继续为您提供相关服务，但是除非您显式同意，否则我们在默认的状态下不会上传您的任何敏感数据。
-
-All data is stored in a local SQLite database. When using local features, no data is uploaded to any server. We do not collect any of your sensitive information without your permission — in the future, we may collect activity records for software development purposes, but these records only include whether you have opened the app and do not contain any other sensitive information. All data reporting logic is fully open-sourced in the codebase. If you have concerns, you are welcome to review the code yourself.
-
-When using features that require network services, we need your data to continue providing those services. However, unless you explicitly agree, we will not upload any of your sensitive data by default.
+当您使用需要网络服务才能提供的功能时，我们需要您的数据才能继续为您提供相关服务，但是除非您主动打开网络功能，否则我们在默认的状态下不会上传您的任何敏感数据。
 
 ---
 
@@ -150,10 +148,6 @@ GPL-3.0（GNU General Public License v3.0）
 没有什么人活跃的QQ交流群：745297798
 
 该群为作者私人群，仅供作者产出奇怪的开源作品使用。
-
-A QQ group (barely active): 745297798
-
-This is the author's personal group, used solely for the author's open-source projects.
 
 ---
 
