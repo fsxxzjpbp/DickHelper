@@ -20,7 +20,7 @@ A simple, efficient, **cross-platform** masturbation recording tool.
 
 The Android version of DickHelper is now available. Core features are largely complete. However, as the project follows a **desktop-first** strategy, some mobile features may **lag behind** — your understanding is appreciated.
 
-下载地址 | Download: https://github.com/zzzdajb/DickHelper/releases/tag/mobile-v0.0.2
+下载地址 | Download: https://github.com/zzzdajb/DickHelper/releases/tag/mobile-v0.0.3
 
 移动端现已支持LAN同步功能，您可以在任意设备上自由的记录您的体验，无需担心数据合并问题。
 
