@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "IPC handler naming, forbidden patterns for main process code"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "IPC error propagation patterns for the new telemetry:report handler"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Code standards, forbidden patterns for frontend code"}
+{"file": ".trellis/spec/frontend/code-style.md", "reason": "C# style TypeScript conventions used in this project"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Custom hook patterns for useTelemetry implementation"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component patterns for the settings UI additions"}
+{"file": ".trellis/spec/frontend/mobile-implementation.md", "reason": "Mobile app implementation contract for Expo/RN changes"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "State management patterns for telemetry config"}
