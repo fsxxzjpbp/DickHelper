@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Dialog, List, Portal, ProgressBar, SegmentedButtons, Snackbar, Surface, Text, TextInput } from "react-native-paper";
+import { Button, Dialog, List, Portal, ProgressBar, SegmentedButtons, Snackbar, Surface, Switch, Text, TextInput } from "react-native-paper";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -9,6 +9,7 @@ import type { IMobileUpdateState, MobileUpdateStatus } from "../../src/types/Mob
 import { useMobileDatabaseService } from "../../src/hooks/useMobileDatabaseService";
 import { useMobileUpdateState } from "../../src/hooks/useMobileUpdateState";
 import { useRecords } from "../../src/hooks/useRecords";
+import { useTelemetry } from "../../src/hooks/useTelemetry";
 import { FormatDateTime } from "../../src/utils/formatters";
 import { SyncWithDesktop } from "../../src/services/MobileSyncService";
 
@@ -18,6 +19,8 @@ export default function SettingsScreen() {
     const { records, refresh } = useRecords();
     const { updateState, setUpdateSource, checkForUpdates, downloadUpdate, installUpdate, openInstallPermissionSettings } =
         useMobileUpdateState();
+    const { enabled: telemetryEnabled, toggle: telemetryToggle, osLabel, appVersion } = useTelemetry();
+    const [telemetryConfirmVisible, setTelemetryConfirmVisible] = useState<boolean>(false);
     const [busy, setBusy] = useState<boolean>(false);
     const [message, setMessage] = useState<string | null>(null);
     const [syncAddress, setSyncAddress] = useState<string>("");
@@ -142,6 +145,19 @@ export default function SettingsScreen() {
             const errorMessage = caught instanceof Error ? caught.message : String(caught);
             setMessage(`打开安装权限设置失败：${errorMessage}`);
         }
+    };
+
+    const HandleTelemetryToggle = (nextValue: boolean): void => {
+        if (nextValue) {
+            void telemetryToggle(true);
+        } else {
+            setTelemetryConfirmVisible(true);
+        }
+    };
+
+    const HandleConfirmTelemetryDisable = (): void => {
+        setTelemetryConfirmVisible(false);
+        void telemetryToggle(false);
     };
 
     const HandleSync = async (): Promise<void> => {
@@ -428,6 +444,30 @@ export default function SettingsScreen() {
                 </List.Section>
             </Surface>
 
+            <Surface style={styles.sectionSurface} elevation={1}>
+                <View style={styles.updateHeader}>
+                    <Text variant="titleMedium" style={styles.sectionTitle}>
+                        遥测
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.sectionSubtitle}>
+                        帮助了解用户规模和版本分布，不涉及任何使用记录和个人信息。
+                    </Text>
+                </View>
+
+                <View style={styles.telemetryRow}>
+                    <Text variant="bodyMedium" style={styles.factLabel}>
+                        开启遥测
+                    </Text>
+                    <Switch value={telemetryEnabled} onValueChange={HandleTelemetryToggle} />
+                </View>
+
+                {telemetryEnabled && (
+                    <Text variant="bodySmall" style={styles.telemetryHint}>
+                        上报数据：操作系统（{osLabel}）、应用版本（{appVersion}）
+                    </Text>
+                )}
+            </Surface>
+
             <Surface style={styles.aboutSurface} elevation={0}>
                 <Text variant="labelLarge" style={styles.aboutLabel}>
                     关于
@@ -456,6 +496,19 @@ export default function SettingsScreen() {
                     </Dialog.Content>
                     <Dialog.Actions>
                         <Button onPress={() => setSyncDialogVisible(false)}>确定</Button>
+                    </Dialog.Actions>
+                </Dialog>
+
+                <Dialog visible={telemetryConfirmVisible} onDismiss={() => setTelemetryConfirmVisible(false)}>
+                    <Dialog.Title>确认关闭遥测？</Dialog.Title>
+                    <Dialog.Content>
+                        <Text variant="bodyMedium">
+                            关闭后将不再上报任何数据。我们仅收集以下信息：操作系统、应用版本。不涉及任何使用记录和个人信息。
+                        </Text>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setTelemetryConfirmVisible(false)}>取消</Button>
+                        <Button textColor="#dc2626" onPress={HandleConfirmTelemetryDisable}>确认关闭</Button>
                     </Dialog.Actions>
                 </Dialog>
             </Portal>
@@ -621,5 +674,14 @@ const styles = StyleSheet.create({
     },
     textInput: {
         backgroundColor: "#ffffff",
+    },
+    telemetryRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    telemetryHint: {
+        color: "#64748b",
+        marginTop: 4,
     },
 });

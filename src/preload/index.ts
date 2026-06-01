@@ -53,6 +53,10 @@ const electronAPI = {
     SyncStart: (port?: number): Promise<ISyncStatus> => ipcRenderer.invoke("sync:start", port),
     SyncStop: (): Promise<ISyncStatus> => ipcRenderer.invoke("sync:stop"),
     SyncGetStatus: (): Promise<ISyncStatus> => ipcRenderer.invoke("sync:get-status"),
+    ReportTelemetry: (uuid: string, platform: string, appVersion: string, os: string, baseUrl: string): Promise<void> =>
+        ipcRenderer.invoke("telemetry:report", uuid, platform, appVersion, os, baseUrl),
+    GetAppVersion: (): Promise<string> => ipcRenderer.invoke("app:get-version"),
+    GetAppOs: (): Promise<string> => ipcRenderer.invoke("app:get-os"),
 };
 
 try {

@@ -35,6 +35,7 @@ import { OnlineView } from "./views/OnlineView";
 import { About } from "./views/About";
 import { useUpdateState } from "./hooks/useUpdateState";
 import { useOnlineService } from "./hooks/useOnlineService";
+import { useTelemetry } from "./hooks/useTelemetry";
 import { UpdateService } from "./services/UpdateService";
 
 type View = "record" | "stats" | "history" | "prediction" | "settings" | "online" | "about";
@@ -102,6 +103,7 @@ export const App = () => {
     const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<string | null>(null);
     const [dismissedDownloadedVersion, setDismissedDownloadedVersion] = useState<string | null>(null);
     const { UpdateState } = useUpdateState();
+    useTelemetry();
     const {
         onlineState,
         enableOnline,

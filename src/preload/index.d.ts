@@ -55,6 +55,9 @@ declare global {
             SyncStart: (port?: number) => Promise<ISyncStatus>;
             SyncStop: () => Promise<ISyncStatus>;
             SyncGetStatus: () => Promise<ISyncStatus>;
+            ReportTelemetry: (uuid: string, platform: string, appVersion: string, os: string, baseUrl: string) => Promise<void>;
+            GetAppVersion: () => Promise<string>;
+            GetAppOs: () => Promise<string>;
         };
     }
 }

@@ -44,3 +44,4 @@ export type {
 } from "./prediction";
 export type { IAiAnalysisData, IAiConfig, IDurationStats } from "./ai";
 export { BuildAnalysisData, BuildPrompt, AnalyzeLocally, AnalyzeWithApi, Analyze } from "./ai";
+export { reportTelemetryLaunch } from "./telemetryClient";

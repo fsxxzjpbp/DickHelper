@@ -6,6 +6,7 @@ import {
     Button,
     Divider,
     Group,
+    Modal,
     Notification,
     Paper,
     PasswordInput,
@@ -27,10 +28,12 @@ import {
     IconWifi,
     IconCloud,
     IconServer,
+    IconChartLine,
 } from "@tabler/icons-react";
 import { DatabaseService } from "../services/DatabaseService";
 import { SyncService } from "../services/SyncService";
 import { useRecords } from "../hooks/useRecords";
+import { useTelemetry } from "../hooks/useTelemetry";
 import type { IOnlineState } from "../hooks/useOnlineService";
 
 const AI_PROVIDER_OPTIONS: { value: string; label: string }[] = [
@@ -160,6 +163,8 @@ export const Settings = ({ onlineState, onEnableOnline, onDisableOnline }: ISett
             )}
 
             <AiConfigSection />
+
+            <TelemetrySection />
         </Stack>
     );
 };
@@ -624,6 +629,75 @@ const LanSyncSection = () => {
                     </Notification>
                 )}
             </Stack>
+        </Paper>
+    );
+};
+
+const TelemetrySection = () => {
+    const { enabled, toggle, osLabel, appVersion } = useTelemetry();
+    const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+
+    const HandleToggle = (event: React.ChangeEvent<HTMLInputElement>): void => {
+        const nextEnabled: boolean = event.currentTarget.checked;
+        if (nextEnabled) {
+            void toggle(true);
+        } else {
+            setConfirmOpen(true);
+        }
+    };
+
+    const HandleConfirmDisable = (): void => {
+        setConfirmOpen(false);
+        void toggle(false);
+    };
+
+    return (
+        <Paper shadow="sm" radius="md" p="lg" withBorder>
+            <Group justify="space-between" align="flex-start" mb="xs">
+                <Group gap="sm">
+                    <IconChartLine size={22} />
+                    <Title order={4}>遥测</Title>
+                </Group>
+                <Badge variant="light" color={enabled ? "green" : "gray"}>
+                    {enabled ? "已开启" : "已关闭"}
+                </Badge>
+            </Group>
+            <Text size="sm" c="dimmed" mb="md">
+                帮助了解用户规模和版本分布，不涉及任何使用记录和个人信息。
+            </Text>
+
+            <Group justify="space-between" align="center">
+                <Text size="sm" c="dimmed">开启遥测</Text>
+                <Switch checked={enabled} onChange={HandleToggle} />
+            </Group>
+
+            {enabled && (
+                <Text size="xs" c="dimmed" mt="sm">
+                    上报数据：操作系统（{osLabel}）、应用版本（{appVersion}）
+                </Text>
+            )}
+
+            <Modal
+                opened={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+                title="确认关闭遥测？"
+                centered
+                size="sm"
+            >
+                <Stack gap="md">
+                    <Text size="sm">
+                        关闭后将不再上报任何数据。我们仅收集以下信息：操作系统、应用版本。不涉及任何使用记录和个人信息。
+                    </Text>
+                    <Group justify="flex-end">
+                        <Button variant="subtle" onClick={() => setConfirmOpen(false)}>
+                            取消
+                        </Button>
+                        <Button color="red" onClick={HandleConfirmDisable}>
+                            确认关闭
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
         </Paper>
     );
 };

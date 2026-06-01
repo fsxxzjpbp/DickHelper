@@ -9,6 +9,7 @@ import { PaperProvider, Text } from "react-native-paper";
 import { appTheme } from "../src/theme";
 import { InitializeDatabase } from "../src/services/MobileDatabaseService";
 import { useMobileUpdateState } from "../src/hooks/useMobileUpdateState";
+import { useTelemetry } from "../src/hooks/useTelemetry";
 
 function AppLoadingScreen() {
     return (
@@ -29,6 +30,11 @@ function MobileUpdateBootstrap() {
     return null;
 }
 
+function TelemetryBootstrap() {
+    useTelemetry();
+    return null;
+}
+
 export default function RootLayout() {
     return (
         <GestureHandlerRootView style={styles.root}>
@@ -38,6 +44,7 @@ export default function RootLayout() {
                     <Suspense fallback={<AppLoadingScreen />}>
                         <SQLiteProvider databaseName="dickhelper.db" onInit={InitializeDatabase} useSuspense>
                             <MobileUpdateBootstrap />
+                            <TelemetryBootstrap />
                             <Stack
                                 screenOptions={{
                                     contentStyle: {

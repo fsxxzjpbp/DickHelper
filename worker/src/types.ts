@@ -76,3 +76,10 @@ export interface SuccessResponse {
 export interface ErrorResponse {
   error: string;
 }
+
+export interface TelemetryLaunchRequest {
+  uuid: string;
+  platform: string;
+  app_version: string;
+  os: string;
+}

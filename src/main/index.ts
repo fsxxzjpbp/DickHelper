@@ -13,11 +13,13 @@ let syncService: SyncService | null = null;
 let isQuitting: boolean = false;
 
 const IS_DEV: boolean = process.env.ELECTRON_RENDERER_URL !== undefined;
-const ALLOWED_AI_SETTING_KEYS: Set<string> = new Set([
+const ALLOWED_SETTING_KEYS: Set<string> = new Set([
     "ai_provider",
     "ai_api_key",
     "ai_api_endpoint",
     "ai_model",
+    "telemetry_enabled",
+    "telemetry_uuid",
 ]);
 
 function BuildAiConfig(): IAiConfig {
@@ -247,7 +249,7 @@ function RegisterIpcHandlers(): void {
     });
 
     ipcMain.handle("settings:get", (_event, key: unknown) => {
-        if (typeof key !== "string" || !ALLOWED_AI_SETTING_KEYS.has(key)) {
+        if (typeof key !== "string" || !ALLOWED_SETTING_KEYS.has(key)) {
             throw new Error(`不允许的设置项: ${String(key)}`);
         }
 
@@ -255,7 +257,7 @@ function RegisterIpcHandlers(): void {
     });
 
     ipcMain.handle("settings:set", (_event, key: unknown, value: unknown) => {
-        if (typeof key !== "string" || typeof value !== "string" || !ALLOWED_AI_SETTING_KEYS.has(key)) {
+        if (typeof key !== "string" || typeof value !== "string" || !ALLOWED_SETTING_KEYS.has(key)) {
             throw new Error(`不允许的设置项: ${String(key)}`);
         }
 
@@ -333,6 +335,19 @@ function RegisterIpcHandlers(): void {
 
     ipcMain.handle("sync:get-status", () => {
         return syncService!.GetStatus();
+    });
+
+    ipcMain.handle("telemetry:report", async (_event, uuid: string, platform: string, appVersion: string, os: string, baseUrl: string) => {
+        const { reportTelemetryLaunch } = await import("@dickhelper/core");
+        await reportTelemetryLaunch(baseUrl, { uuid, platform: platform as "desktop", app_version: appVersion, os });
+    });
+
+    ipcMain.handle("app:get-version", () => {
+        return app.getVersion();
+    });
+
+    ipcMain.handle("app:get-os", () => {
+        return process.platform;
     });
 }
 

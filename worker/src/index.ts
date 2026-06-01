@@ -11,6 +11,7 @@ import type {
   RankingStats,
   SuccessResponse,
   ErrorResponse,
+  TelemetryLaunchRequest,
 } from './types';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -545,6 +546,40 @@ app.get('/api/v1/ranking/weekly', async (c) => {
     });
   } catch (error) {
     console.error('Weekly ranking error:', error);
+    return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /api/v1/telemetry/launch
+app.post('/api/v1/telemetry/launch', async (c) => {
+  try {
+    const body = await c.req.json<TelemetryLaunchRequest>();
+    const { uuid, platform, app_version, os } = body;
+
+    if (!uuid || typeof uuid !== 'string') {
+      return c.json<ErrorResponse>({ error: 'Invalid uuid' }, 400);
+    }
+    if (!platform || typeof platform !== 'string') {
+      return c.json<ErrorResponse>({ error: 'Invalid platform' }, 400);
+    }
+    if (!app_version || typeof app_version !== 'string') {
+      return c.json<ErrorResponse>({ error: 'Invalid app_version' }, 400);
+    }
+    if (!os || typeof os !== 'string') {
+      return c.json<ErrorResponse>({ error: 'Invalid os' }, 400);
+    }
+
+    // UPSERT by (uuid, date) — 同一天同一设备只保留最新
+    await c.env.DB.prepare(`
+      INSERT INTO telemetry_daily (uuid, date, platform, app_version, os, last_seen_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT (uuid, date)
+      DO UPDATE SET platform = ?, app_version = ?, os = ?, last_seen_at = datetime('now')
+    `).bind(uuid, getTodayUTC8(), platform, app_version, os, platform, app_version, os).run();
+
+    return c.json<{ success: boolean }>({ success: true });
+  } catch (error) {
+    console.error('Telemetry launch error:', error);
     return c.json<ErrorResponse>({ error: 'Internal server error' }, 500);
   }
 });

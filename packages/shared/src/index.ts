@@ -26,3 +26,4 @@ export type {
     IErrorResponse,
     IOnlineConfig,
 } from "./ILeaderboard";
+export type { ITelemetryLaunchRequest, ITelemetryLaunchResponse } from "./ITelemetry";
