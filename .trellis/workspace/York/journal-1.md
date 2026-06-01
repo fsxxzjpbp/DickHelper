@@ -971,3 +971,36 @@ Fixed registration not syncing historical data: added full history sync via batc
 ### Next Steps
 
 - None - task complete
+
+
+## Session 28: 遥测系统实现
+
+**Date**: 2026-06-01
+**Task**: 遥测系统实现
+**Branch**: `main`
+
+### Summary
+
+新增遥测功能：默认开启，每18小时上报活跃数据（OS、应用版本），支持桌面端和移动端，设置页可关闭并弹窗确认。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e6e1605` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
